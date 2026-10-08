@@ -1,0 +1,13 @@
+**/bin/
+**/obj/
+**/logs/
+**/.vs/
+**/.vscode/
+**/TestResults/
+**/appsettings.Local.json
+.git/
+.env
+secrets/
+tests/
+docs/
+scripts/

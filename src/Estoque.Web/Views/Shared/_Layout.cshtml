@@ -1,0 +1,103 @@
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    string Ativo(string c, string? a = null) =>
+        string.Equals(controller, c, StringComparison.OrdinalIgnoreCase)
+        && (a is null || string.Equals(action, a, StringComparison.OrdinalIgnoreCase)) ? "active" : "";
+    var trocandoSenha = User.HasClaim(ClaimsApp.TrocarSenha, "1");
+}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · Estoque e Doações</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body data-abrir-modal="@ViewData["AbrirModal"]">
+<div class="app-shell">
+    <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="menuLateral">
+        <div class="sidebar-brand">
+            <i class="bi bi-box-seam"></i>
+            <div>
+                <strong>Estoque &amp; Doações</strong>
+                <small>Creche Fraternidade Menino Jesus</small>
+            </div>
+            <button type="button" class="btn-close btn-close-white d-lg-none ms-auto" data-bs-dismiss="offcanvas" data-bs-target="#menuLateral" aria-label="Fechar"></button>
+        </div>
+        @if (!trocandoSenha)
+        {
+            <nav class="nav flex-column">
+                <a class="nav-link @Ativo("Home", "Index")" asp-controller="Home" asp-action="Index"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                <a class="nav-link @Ativo("Estoque")" asp-controller="Estoque" asp-action="Index"><i class="bi bi-boxes"></i> Estoque</a>
+                <a class="nav-link @Ativo("Itens")" asp-controller="Itens" asp-action="Index"><i class="bi bi-tags"></i> Itens</a>
+                <a class="nav-link @Ativo("Categorias")" asp-controller="Categorias" asp-action="Index"><i class="bi bi-collection"></i> Categorias</a>
+                <a class="nav-link @Ativo("Parceiros")" asp-controller="Parceiros" asp-action="Index"><i class="bi bi-truck"></i> Fornecedores</a>
+                <span class="nav-link disabled" title="Disponível na versão completa"><i class="bi bi-file-earmark-bar-graph"></i> Relatórios <span class="badge text-bg-secondary ms-auto">em breve</span></span>
+                <span class="nav-link disabled" title="Disponível na versão completa"><i class="bi bi-people"></i> Usuários <span class="badge text-bg-secondary ms-auto">em breve</span></span>
+                <a class="nav-link @Ativo("Home", "Sobre")" asp-controller="Home" asp-action="Sobre"><i class="bi bi-heart"></i> Sobre a ONG</a>
+            </nav>
+        }
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <button class="btn btn-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#menuLateral" aria-label="Abrir menu">
+                <i class="bi bi-list"></i>
+            </button>
+            @if (!trocandoSenha)
+            {
+                @await Component.InvokeAsync("SeletorUnidade")
+            }
+            <div class="ms-auto d-flex align-items-center gap-2">
+                @if (!trocandoSenha)
+                {
+                    @await Component.InvokeAsync("SinoAlertas")
+                }
+                <div class="dropdown">
+                    <button class="btn btn-light d-flex align-items-center gap-2" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="avatar">@Estoque.Web.Controllers.ContaController.Iniciais(User)</span>
+                        <span class="d-none d-md-inline text-start lh-sm">
+                            <span class="d-block small fw-semibold">@User.Identity?.Name</span>
+                            <span class="d-block text-muted" style="font-size:.75rem">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" asp-controller="Conta" asp-action="AlterarSenha"><i class="bi bi-key"></i> Alterar senha</a></li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>
+                            <form asp-controller="Conta" asp-action="Logout" method="post">
+                                <button class="dropdown-item text-danger" type="submit"><i class="bi bi-box-arrow-right"></i> Sair</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <main class="content">
+            @if (TempData["Sucesso"] is string ok)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle"></i> @ok
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                </div>
+            }
+            @if (TempData["Erro"] is string erro)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> @erro
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+                </div>
+            }
+            @RenderBody()
+        </main>
+    </div>
+</div>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

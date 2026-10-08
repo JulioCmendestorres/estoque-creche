@@ -1,0 +1,331 @@
+@model EstoqueIndexViewModel
+@{
+    ViewData["Title"] = "Estoque";
+    var podeEditar = (await Autorizacao.AuthorizeAsync(User, Policies.PodeEditar)).Succeeded;
+    var ehAdmin = (await Autorizacao.AuthorizeAsync(User, Policies.SomenteAdmin)).Succeeded;
+    if (Model.ModalAberto == "entrada") { ViewData["AbrirModal"] = "modalEntrada"; }
+    if (Model.ModalAberto == "saida") { ViewData["AbrirModal"] = "modalSaida"; }
+    var abaEstoque = Model.Aba == "estoque";
+}
+<div class="page-header">
+    <h1>Estoque</h1>
+    <span class="badge text-bg-light border">@Model.NomeUnidade</span>
+    @if (podeEditar)
+    {
+        <div class="ms-auto d-flex gap-2">
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalEntrada"><i class="bi bi-box-arrow-in-down"></i> Nova Entrada</button>
+            <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalSaida"><i class="bi bi-box-arrow-up"></i> Nova Saída</button>
+        </div>
+    }
+</div>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item"><a class="nav-link @(abaEstoque ? "active" : "")" asp-action="Index" asp-route-aba="estoque">Estoque Atual</a></li>
+    <li class="nav-item"><a class="nav-link @(!abaEstoque ? "active" : "")" asp-action="Index" asp-route-aba="movimentacoes">Movimentações</a></li>
+</ul>
+
+@if (abaEstoque)
+{
+    <form method="get" class="mb-3 d-flex gap-2" style="max-width: 520px">
+        <input type="hidden" name="aba" value="estoque" />
+        <input name="busca" value="@Model.Busca" class="form-control" placeholder="Buscar item" aria-label="Buscar item" />
+        <button class="btn btn-outline-primary" type="submit"><i class="bi bi-search"></i></button>
+    </form>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr><th>Item</th><th>Categoria</th><th class="text-end">Quantidade</th><th class="text-end">Mínimo</th><th class="text-end">Valor em estoque</th><th>Situação</th></tr>
+                </thead>
+                <tbody>
+                @if (Model.Saldos.Count == 0)
+                {
+                    <tr><td colspan="6" class="text-center text-muted py-4">Nenhum item com estoque nesta unidade. Registre uma entrada para começar.</td></tr>
+                }
+                @foreach (var s in Model.Saldos)
+                {
+                    <tr>
+                        <td>@s.Item!.Nome <span class="text-muted small d-block">@s.Item.CodigoInterno</span></td>
+                        <td>@s.Item.Categoria?.Nome</td>
+                        <td class="text-end">@s.QuantidadeAtual @s.Item.UnidadeMedida</td>
+                        <td class="text-end">@s.QuantidadeMinima</td>
+                        <td class="text-end">@Formatos.Moeda(s.ValorTotalEstoque)</td>
+                        <td>
+                            @if (s.AbaixoDoMinimo)
+                            {
+                                <span class="badge text-bg-danger"><i class="bi bi-exclamation-triangle"></i> Estoque baixo</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-success">OK</span>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else
+{
+    <form method="get" class="card mb-3">
+        <input type="hidden" name="aba" value="movimentacoes" />
+        <div class="card-body row g-2 align-items-end">
+            <div class="col-6 col-md-2">
+                <label class="form-label small" for="De">De</label>
+                <input type="date" id="De" name="De" value="@Model.Filtro.De?.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-6 col-md-2">
+                <label class="form-label small" for="Ate">Até</label>
+                <input type="date" id="Ate" name="Ate" value="@Model.Filtro.Ate?.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small" for="Tipo">Tipo</label>
+                <select id="Tipo" name="Tipo" class="form-select">
+                    <option value="">Todos</option>
+                    @foreach (var t in TiposMovimentacao.Rotulos)
+                    {
+                        <option value="@t.Key" selected="@(t.Key == Model.Filtro.Tipo)">@t.Value</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small" for="ItemId">Item</label>
+                <select id="ItemId" name="ItemId" class="form-select">
+                    <option value="">Todos</option>
+                    @foreach (var i in Model.ItensAtivos)
+                    {
+                        <option value="@i.Id" selected="@(i.Id == Model.Filtro.ItemId)">@i.Nome</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-grid"><button class="btn btn-outline-primary" type="submit"><i class="bi bi-funnel"></i> Filtrar</button></div>
+        </div>
+    </form>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                <tr><th>Número</th><th>Data</th><th>Tipo</th><th>Item</th><th class="text-end">Qtd.</th><th class="text-end">Valor total</th><th>Origem / destino</th><th>Responsável</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody>
+                @if (Model.Movimentacoes.Count == 0)
+                {
+                    <tr><td colspan="10" class="text-center text-muted py-4">Nenhuma movimentação encontrada.</td></tr>
+                }
+                @foreach (var m in Model.Movimentacoes)
+                {
+                    var cancelada = m.Status == StatusMovimentacao.Cancelada;
+                    <tr class="@(cancelada ? "text-muted" : "")">
+                        <td class="small text-nowrap">@m.NumeroMovimentacao</td>
+                        <td class="text-nowrap">@Formatos.Data(m.DataMovimentacao)</td>
+                        <td><span class="badge @(m.EhEntrada ? "badge-entrada" : "badge-saida")">@TiposMovimentacao.Rotulo(m.TipoMovimentacao)</span></td>
+                        <td>@m.Item?.Nome</td>
+                        <td class="text-end text-nowrap">@(m.EhEntrada ? "+" : "−")@m.Quantidade @m.Item?.UnidadeMedida</td>
+                        <td class="text-end text-nowrap">@Formatos.Moeda(m.ValorTotal)</td>
+                        <td class="small">
+                            @if (m.EhEntrada) { @(m.Parceiro?.Nome ?? "Anônimo") }
+                            else if (m.Beneficiario is not null) { @m.Beneficiario }
+                            else { <span class="text-muted">—</span> }
+                        </td>
+                        <td class="small">@m.Responsavel?.Nome</td>
+                        <td>
+                            <span class="badge @(cancelada ? "text-bg-secondary" : "text-bg-light border")">@m.Status</span>
+                            @if (!string.IsNullOrEmpty(m.Observacoes))
+                            {
+                                <i class="bi bi-chat-left-text text-muted ms-1" title="@m.Observacoes"></i>
+                            }
+                        </td>
+                        <td class="text-end">
+                            @if (ehAdmin && m.Status == StatusMovimentacao.Processada)
+                            {
+                                <button class="btn btn-sm btn-outline-danger" title="Cancelar (estornar)" data-bs-toggle="modal" data-bs-target="#modalCancelar"
+                                        data-id="@m.Id" data-numero="@m.NumeroMovimentacao"><i class="bi bi-x-circle"></i></button>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <p class="text-muted small mt-2">Exibindo até 500 movimentações. Movimentação processada não é editada: cancele e registre outra.</p>
+}
+
+@if (podeEditar)
+{
+    <!-- Modal: Registrar Entrada -->
+    <div class="modal fade" id="modalEntrada" tabindex="-1" aria-labelledby="tituloEntrada" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <form class="modal-content" asp-action="NovaEntrada" method="post" novalidate>
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="tituloEntrada"><i class="bi bi-box-arrow-in-down text-success"></i> Registrar entrada</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    @if (Model.ModalAberto == "entrada")
+                    {
+                        <div asp-validation-summary="All" class="alert alert-danger py-2 small"></div>
+                    }
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="Entrada.Origem" class="form-label"></label>
+                            <select asp-for="Entrada.Origem" class="form-select">
+                                <option value="@TiposMovimentacao.DoacaoRecebida">Doação</option>
+                                <option value="@TiposMovimentacao.Compra">Compra</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label asp-for="Entrada.ItemId" class="form-label"></label> <span class="text-danger">*</span>
+                            <select asp-for="Entrada.ItemId" class="form-select" data-unidade-alvo="Entrada_Unidade" required>
+                                <option value="">Selecione...</option>
+                                @foreach (var i in Model.ItensAtivos)
+                                {
+                                    <option value="@i.Id" data-unidade="@i.UnidadeMedida">@i.Nome</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label asp-for="Entrada.Quantidade" class="form-label"></label> <span class="text-danger">*</span>
+                            <input asp-for="Entrada.Quantidade" type="number" min="1" class="form-control" required />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label" for="Entrada_Unidade">Unidade</label>
+                            <input id="Entrada_Unidade" class="form-control" readonly tabindex="-1" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label asp-for="Entrada.ValorUnitario" class="form-label"></label>
+                            <input asp-for="Entrada.ValorUnitario" type="text" inputmode="decimal" class="form-control" placeholder="0,00"
+                                   value="@(Model.Entrada.ValorUnitario?.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")))" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label asp-for="Entrada.Data" class="form-label"></label>
+                            <input name="Entrada.Data" id="Entrada_Data" type="date" class="form-control" value="@Model.Entrada.Data.ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Entrada.ParceiroId" class="form-label">Fornecedor <span class="text-danger obrigatorio">*</span></label>
+                            <select asp-for="Entrada.ParceiroId" class="form-select" data-obrigatorio-quando="Entrada_Origem=@TiposMovimentacao.Compra">
+                                <option value="">Anônimo / não informado</option>
+                                @foreach (var p in Model.Parceiros)
+                                {
+                                    <option value="@p.Id">@p.Nome</option>
+                                }
+                            </select>
+                            <div class="form-text">Obrigatório na compra; opcional na doação.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Responsável</label>
+                            <input class="form-control" value="@Model.NomeResponsavel" readonly tabindex="-1" />
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Entrada.Observacao" class="form-label"></label>
+                            <textarea asp-for="Entrada.Observacao" rows="2" class="form-control"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Registrar entrada</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Registrar Saída -->
+    <div class="modal fade" id="modalSaida" tabindex="-1" aria-labelledby="tituloSaida" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <form class="modal-content" asp-action="NovaSaida" method="post" novalidate>
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="tituloSaida"><i class="bi bi-box-arrow-up text-danger"></i> Registrar saída</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    @if (Model.ModalAberto == "saida")
+                    {
+                        <div asp-validation-summary="All" class="alert alert-danger py-2 small"></div>
+                    }
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label asp-for="Saida.ItemId" class="form-label"></label> <span class="text-danger">*</span>
+                            <select asp-for="Saida.ItemId" class="form-select" data-unidade-alvo="Saida_Unidade" required>
+                                <option value="">Selecione...</option>
+                                @foreach (var i in Model.ItensAtivos)
+                                {
+                                    var saldo = Model.SaldoPorItem.TryGetValue(i.Id, out var sq) ? sq : 0;
+                                    <option value="@i.Id" data-unidade="@i.UnidadeMedida" disabled="@(saldo == 0)">@i.Nome (saldo: @saldo)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Saida.TipoSaida" class="form-label"></label>
+                            <select asp-for="Saida.TipoSaida" class="form-select">
+                                <option value="@TiposMovimentacao.ConsumoInterno">Uso interno</option>
+                                <option value="@TiposMovimentacao.DoacaoRealizada">Doação</option>
+                                <option value="@TiposMovimentacao.Avaria">Avaria</option>
+                            </select>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label asp-for="Saida.Quantidade" class="form-label"></label> <span class="text-danger">*</span>
+                            <input asp-for="Saida.Quantidade" type="number" min="1" class="form-control" required />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label" for="Saida_Unidade">Unidade</label>
+                            <input id="Saida_Unidade" class="form-control" readonly tabindex="-1" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label asp-for="Saida.ValorUnitario" class="form-label"></label>
+                            <input asp-for="Saida.ValorUnitario" type="text" inputmode="decimal" class="form-control" placeholder="0,00"
+                                   value="@(Model.Saida.ValorUnitario?.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")))" />
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label asp-for="Saida.Data" class="form-label"></label>
+                            <input name="Saida.Data" id="Saida_Data" type="date" class="form-control" value="@Model.Saida.Data.ToString("yyyy-MM-dd")" required />
+                        </div>
+                        <div class="col-12" data-mostrar-quando="Saida_TipoSaida=@TiposMovimentacao.DoacaoRealizada">
+                            <label asp-for="Saida.Beneficiario" class="form-label"></label> <span class="text-danger">*</span>
+                            <input asp-for="Saida.Beneficiario" class="form-control" data-obrigatorio-se-visivel placeholder="Pessoa, família ou instituição beneficiada" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Responsável</label>
+                            <input class="form-control" value="@Model.NomeResponsavel" readonly tabindex="-1" />
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Saida.Observacao" class="form-label"></label>
+                            <textarea asp-for="Saida.Observacao" rows="2" class="form-control"></textarea>
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-3 mb-0">O valor do estoque é baixado pelo custo médio; o valor unitário da saída é apenas informativo (prestação de contas).</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Registrar saída</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (ehAdmin)
+{
+    <div class="modal fade" id="modalCancelar" tabindex="-1" aria-labelledby="tituloCancelar" aria-hidden="true">
+        <div class="modal-dialog">
+            <form class="modal-content" asp-action="Cancelar" method="post">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="tituloCancelar">Cancelar movimentação <span data-numero></span></h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="id" />
+                    <p class="small text-muted">O efeito no estoque será estornado. A movimentação continua no histórico como <strong>cancelada</strong>.</p>
+                    <label for="motivo" class="form-label">Motivo <span class="text-danger">*</span></label>
+                    <textarea id="motivo" name="motivo" class="form-control" rows="2" required maxlength="500"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Voltar</button>
+                    <button type="submit" class="btn btn-danger">Confirmar cancelamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}

@@ -1,0 +1,66 @@
+@model List<Parceiro>
+@{
+    ViewData["Title"] = "Fornecedores";
+    var podeEditar = (await Autorizacao.AuthorizeAsync(User, Policies.PodeEditar)).Succeeded;
+    var inativos = ViewBag.Inativos is true;
+}
+<div class="page-header">
+    <h1>Fornecedores e doadores</h1>
+    @if (podeEditar)
+    {
+        <a asp-action="Criar" class="btn btn-primary ms-auto"><i class="bi bi-plus-lg"></i> Novo fornecedor</a>
+    }
+</div>
+
+<form method="get" class="card mb-3">
+    <div class="card-body row g-2 align-items-end">
+        <div class="col-md-7">
+            <label class="form-label small" for="busca">Buscar</label>
+            <input id="busca" name="busca" value="@ViewBag.Busca" class="form-control" placeholder="Nome, CPF ou CNPJ" />
+        </div>
+        <div class="col-md-3">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="inativos" name="inativos" value="true" checked="@inativos" />
+                <label class="form-check-label small" for="inativos">Mostrar inativos</label>
+            </div>
+        </div>
+        <div class="col-md-2 d-grid"><button class="btn btn-outline-primary" type="submit"><i class="bi bi-search"></i> Filtrar</button></div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light"><tr><th>Nome</th><th>Tipo</th><th>CPF/CNPJ</th><th>Contato</th><th></th></tr></thead>
+            <tbody>
+            @if (Model.Count == 0)
+            {
+                <tr><td colspan="5" class="text-center text-muted py-4">Nenhum fornecedor encontrado.</td></tr>
+            }
+            @foreach (var p in Model)
+            {
+                <tr class="@(p.Ativo ? "" : "text-muted")">
+                    <td>@p.Nome @if (!p.Ativo) { <span class="badge text-bg-secondary ms-1">inativo</span> }</td>
+                    <td>@(TiposParceiro.Rotulos.TryGetValue(p.Tipo, out var t) ? t : p.Tipo)</td>
+                    <td class="text-nowrap">@Documentos.Formatar(p.CpfCnpj)</td>
+                    <td class="small">@p.Telefone @if (!string.IsNullOrEmpty(p.Email)) { <span class="d-block">@p.Email</span> }</td>
+                    <td class="text-end text-nowrap">
+                        @if (podeEditar)
+                        {
+                            <a asp-action="Editar" asp-route-id="@p.Id" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+                            <form asp-action="AlterarStatus" asp-route-id="@p.Id" method="post" class="d-inline"
+                                  onsubmit="return confirm('@(p.Ativo ? "Inativar" : "Reativar") o fornecedor?');">
+                                <input type="hidden" name="ativo" value="@(!p.Ativo ? "true" : "false")" />
+                                <button class="btn btn-sm @(p.Ativo ? "btn-outline-danger" : "btn-outline-success")" title="@(p.Ativo ? "Inativar" : "Reativar")">
+                                    <i class="bi @(p.Ativo ? "bi-trash" : "bi-arrow-counterclockwise")"></i>
+                                </button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+<p class="text-muted small mt-2">Doações anônimas são registradas sem fornecedor na tela de entrada.</p>

@@ -1,0 +1,41 @@
+@model List<Categoria>
+@{
+    ViewData["Title"] = "Categorias";
+    var podeEditar = (await Autorizacao.AuthorizeAsync(User, Policies.PodeEditar)).Succeeded;
+}
+<div class="page-header">
+    <h1>Categorias</h1>
+    @if (podeEditar)
+    {
+        <a asp-action="Criar" class="btn btn-primary ms-auto"><i class="bi bi-plus-lg"></i> Nova categoria</a>
+    }
+</div>
+<div class="card" style="max-width: 860px">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light"><tr><th>Nome</th><th>Descrição</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var c in Model)
+            {
+                <tr class="@(c.Ativo ? "" : "text-muted")">
+                    <td>@c.Nome</td>
+                    <td class="small">@c.Descricao</td>
+                    <td>@(c.Ativo ? "Ativa" : "Inativa")</td>
+                    <td class="text-end text-nowrap">
+                        @if (podeEditar)
+                        {
+                            <a asp-action="Editar" asp-route-id="@c.Id" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+                            <form asp-action="AlterarStatus" asp-route-id="@c.Id" method="post" class="d-inline">
+                                <input type="hidden" name="ativo" value="@(!c.Ativo ? "true" : "false")" />
+                                <button class="btn btn-sm @(c.Ativo ? "btn-outline-danger" : "btn-outline-success")" title="@(c.Ativo ? "Inativar" : "Reativar")">
+                                    <i class="bi @(c.Ativo ? "bi-slash-circle" : "bi-arrow-counterclockwise")"></i>
+                                </button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

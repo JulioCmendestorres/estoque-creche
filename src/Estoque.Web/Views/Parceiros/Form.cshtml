@@ -1,0 +1,52 @@
+@model ParceiroInput
+@{
+    var novo = Model.Id == 0;
+    ViewData["Title"] = novo ? "Novo fornecedor" : "Editar fornecedor";
+}
+<div class="page-header"><h1>@ViewData["Title"]</h1></div>
+<div class="card" style="max-width: 860px">
+    <div class="card-body">
+        <form asp-action="@(novo ? "Criar" : "Editar")" asp-route-id="@(novo ? null : Model.Id)" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label asp-for="Nome" class="form-label"></label> <span class="text-danger">*</span>
+                    <input asp-for="Nome" class="form-control" />
+                    <span asp-validation-for="Nome" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Tipo" class="form-label"></label>
+                    <select asp-for="Tipo" class="form-select">
+                        @foreach (var t in TiposParceiro.Rotulos)
+                        {
+                            <option value="@t.Key">@t.Value</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="CpfCnpj" class="form-label"></label>
+                    <input asp-for="CpfCnpj" class="form-control" inputmode="numeric" />
+                    <div class="form-text">Opcional. CPF para pessoa física; CNPJ para empresa/organização.</div>
+                    <span asp-validation-for="CpfCnpj" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Email" class="form-label"></label>
+                    <input asp-for="Email" class="form-control" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Telefone" class="form-label"></label>
+                    <input asp-for="Telefone" class="form-control" inputmode="tel" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="Endereco" class="form-label"></label>
+                    <textarea asp-for="Endereco" rows="2" class="form-control"></textarea>
+                </div>
+            </div>
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>

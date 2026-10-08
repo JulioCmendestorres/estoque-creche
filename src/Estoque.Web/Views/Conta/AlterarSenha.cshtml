@@ -1,0 +1,36 @@
+@model AlterarSenhaInput
+@{
+    ViewData["Title"] = "Alterar senha";
+    var obrigatoria = User.HasClaim(ClaimsApp.TrocarSenha, "1");
+}
+<div class="page-header"><h1>Alterar senha</h1></div>
+<div class="card" style="max-width: 520px">
+    <div class="card-body">
+        @if (obrigatoria)
+        {
+            <div class="alert alert-warning small">
+                <i class="bi bi-shield-lock"></i> Por segurança, defina uma nova senha antes de continuar.
+            </div>
+        }
+        <form asp-action="AlterarSenha" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+            <div class="mb-3">
+                <label asp-for="SenhaAtual" class="form-label"></label>
+                <input asp-for="SenhaAtual" class="form-control" autocomplete="current-password" />
+                <span asp-validation-for="SenhaAtual" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="NovaSenha" class="form-label"></label>
+                <input asp-for="NovaSenha" class="form-control" autocomplete="new-password" />
+                <div class="form-text">Mínimo de 12 caracteres.</div>
+                <span asp-validation-for="NovaSenha" class="text-danger small"></span>
+            </div>
+            <div class="mb-4">
+                <label asp-for="Confirmacao" class="form-label"></label>
+                <input asp-for="Confirmacao" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="Confirmacao" class="text-danger small"></span>
+            </div>
+            <button type="submit" class="btn btn-primary">Salvar nova senha</button>
+        </form>
+    </div>
+</div>

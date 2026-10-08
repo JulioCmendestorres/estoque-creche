@@ -1,0 +1,17 @@
+# Override de desenvolvimento:
+#   docker compose -f compose.yaml -f compose.dev.yaml up -d --build
+# Publica o SQL Server só no loopback (SSMS/Azure Data Studio) e liga dados de demonstração.
+services:
+  sqlserver:
+    ports:
+      - "127.0.0.1:1433:1433"
+
+  migrator:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      SEED_DEMO_DATA: "true"
+
+  web:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Serilog__MinimumLevel__Default: Debug

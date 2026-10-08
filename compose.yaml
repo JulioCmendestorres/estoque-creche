@@ -1,0 +1,130 @@
+name: estoque-creche
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "5" }     # sem isso os logs do Docker enchem o disco
+
+x-app: &app
+  build: .
+  image: estoque-web:local
+  logging: *logging
+  networks: [backend]
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2025-CU9-ubuntu-24.04
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Express
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?defina no .env}
+      MSSQL_MEMORY_LIMIT_MB: "1536"          # valores iniciais; ajustar após medir com docker stats
+    volumes:
+      - mssql_data:/var/opt/mssql
+    healthcheck:
+      # Procura o sqlcmd nos dois caminhos conhecidos (tools18 nas imagens recentes).
+      # Se nenhum existir, o healthcheck falha: veja docs/DECISOES.md (D-07).
+      test: ["CMD-SHELL", "for s in /opt/mssql-tools18/bin/sqlcmd /opt/mssql-tools/bin/sqlcmd; do [ -x $$s ] && exec $$s -C -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -b -o /dev/null; done; exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    mem_limit: 2560m
+    logging: *logging
+    restart: unless-stopped
+    networks: [backend]          # SEM "ports:" — o banco nunca é publicado
+
+  migrator:
+    <<: *app
+    command: ["--migrate"]
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ConnectionStrings__Admin: "Server=sqlserver,1433;Database=master;User Id=sa;Password=${MSSQL_SA_PASSWORD};Encrypt=True;TrustServerCertificate=True"
+      Database__Name: EstoqueDoacoes
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?defina no .env}
+      MAINT_DB_PASSWORD: ${MAINT_DB_PASSWORD:?defina no .env}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:?defina no .env}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?defina no .env}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
+      Migrator__EsperaSegundos: "120"
+    depends_on:
+      sqlserver: { condition: service_healthy }
+    restart: "no"
+
+  web:
+    <<: *app
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      Cookie__SecurePolicy: ${COOKIE_SECURE_POLICY:-SameAsRequest}   # Always quando usar HTTPS
+      ConnectionStrings__Default: "Server=sqlserver,1433;Database=EstoqueDoacoes;User Id=estoque_app;Password=${APP_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True"
+      ForwardedHeaders__RedesConfiaveis: ${FORWARDED_TRUSTED_NETWORKS:-172.16.0.0/12}
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:8080"   # padrão: só loopback
+    volumes:
+      - dataprotection:/home/app/.aspnet/DataProtection-Keys
+    depends_on:
+      migrator: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "dotnet", "Estoque.Web.dll", "--healthcheck"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    read_only: true
+    tmpfs: [/tmp]
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    restart: unless-stopped
+    networks: [frontend, backend]
+
+  proxy:
+    image: caddy:2.11.7
+    profiles: ["https"]                   # só sobe na VPS com domínio (modo A)
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}   # no modo A usar um e-mail real
+      ACME_CA: ${ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web: { condition: service_healthy }
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+    restart: unless-stopped
+    networks: [frontend]
+
+  portainer:
+    image: portainer/portainer-ce:2.39.8
+    profiles: ["tools"]
+    command: ["--admin-password-file=/run/secrets/portainer_admin_password"]
+    secrets: [portainer_admin_password]
+    ports:
+      - "${PORTAINER_BIND:-127.0.0.1}:9443:9443"   # UI HTTPS. NÃO publicar 9000 (HTTP) nem 8000 (agente Edge)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # ≈ acesso root ao host: ver PLANO.md 6.5
+      - portainer_data:/data
+    security_opt: ["no-new-privileges:true"]
+    logging: *logging
+    restart: unless-stopped
+    networks: [tools]
+
+networks:
+  frontend: {}
+  backend: {}
+  tools: {}
+
+secrets:
+  portainer_admin_password:
+    file: ./secrets/portainer_admin_password.txt   # gitignored; 12+ caracteres, sem quebra de linha
+
+volumes:
+  mssql_data:
+  dataprotection:
+  caddy_data:
+  caddy_config:
+  portainer_data:

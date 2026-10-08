@@ -1,0 +1,78 @@
+@model ItemFormViewModel
+@{
+    var novo = Model.Input.Id == 0;
+    ViewData["Title"] = novo ? "Novo item" : "Editar item";
+    var i = Model.Input;
+}
+<div class="page-header">
+    <h1>@ViewData["Title"]</h1>
+</div>
+<div class="card" style="max-width: 860px">
+    <div class="card-body">
+        <form asp-action="@(novo ? "Criar" : "Editar")" asp-route-id="@(novo ? null : i.Id)" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label asp-for="Input.CodigoInterno" class="form-label"></label>
+                    <input asp-for="Input.CodigoInterno" class="form-control" placeholder="@(novo ? "Gerado automaticamente" : "")" />
+                    <span asp-validation-for="Input.CodigoInterno" class="text-danger small"></span>
+                </div>
+                <div class="col-md-8">
+                    <label asp-for="Input.Nome" class="form-label"></label> <span class="text-danger">*</span>
+                    <input asp-for="Input.Nome" class="form-control" />
+                    <span asp-validation-for="Input.Nome" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Input.CategoriaId" class="form-label"></label> <span class="text-danger">*</span>
+                    <select asp-for="Input.CategoriaId" class="form-select">
+                        <option value="">Selecione...</option>
+                        @foreach (var c in Model.Categorias)
+                        {
+                            <option value="@c.Id">@c.Nome</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Input.CategoriaId" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Input.UnidadeMedida" class="form-label"></label> <span class="text-danger">*</span>
+                    <select asp-for="Input.UnidadeMedida" class="form-select">
+                        @foreach (var u in Model.UnidadesMedida)
+                        {
+                            <option value="@u.Codigo">@u.Descricao (@u.Codigo)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Input.UnidadeMedida" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Input.OrigemPadrao" class="form-label"></label>
+                    <select asp-for="Input.OrigemPadrao" class="form-select">
+                        <option value="">—</option>
+                        <option value="doacao">Doação</option>
+                        <option value="compra">Compra</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Input.PrecoEstimado" class="form-label"></label>
+                    <input asp-for="Input.PrecoEstimado" type="text" inputmode="decimal" class="form-control"
+                           value="@(i.PrecoEstimado?.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")))" placeholder="0,00" />
+                    <span asp-validation-for="Input.PrecoEstimado" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Input.QuantidadeMinima" class="form-label"></label>
+                    <input asp-for="Input.QuantidadeMinima" type="number" min="0" class="form-control" />
+                    <div class="form-text">Unidade atual: @Model.NomeUnidade</div>
+                    <span asp-validation-for="Input.QuantidadeMinima" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Input.Descricao" class="form-label"></label>
+                    <textarea asp-for="Input.Descricao" rows="3" class="form-control"></textarea>
+                    <span asp-validation-for="Input.Descricao" class="text-danger small"></span>
+                </div>
+            </div>
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>

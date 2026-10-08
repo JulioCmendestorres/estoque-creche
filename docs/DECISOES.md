@@ -1,0 +1,23 @@
+# Decisões e pendências
+
+Registro das escolhas feitas durante a implementação do MVP que não estavam fechadas no `PLANO.md`
+(ou que divergem dele), com o motivo. Itens marcados **[confirmar]** dependem do responsável.
+
+| # | Decisão | Motivo |
+|---|---|---|
+| D-01 | **Um trigger por tabela faz auditoria + `atualizado_em`** (em vez de um trigger só para `atualizado_em`, como no script original). | Com `RECURSIVE_TRIGGERS OFF`, o UPDATE interno de `atualizado_em` dispararia *outros* triggers da tabela, inclusive o de auditoria, duplicando os logs. |
+| D-02 | **Filtered index não aceita coluna computada**: o índice de alertas (A17) é `estoque_unidade (tenant_id, unidade_id, abaixo_do_minimo)` em vez de `... WHERE abaixo_do_minimo = 1`. | Limitação do SQL Server. A coluna é persistida, então funciona como chave do índice. |
+| D-03 | **Estorno de saída cancelada usa o custo médio atual** (ou o `valor_unitario` da saída se o saldo estiver zerado). | O custo médio do momento da saída não é guardado. Para guardar, seria preciso uma coluna extra em `movimentacoes` gravada pelo trigger. Diferença irrelevante para o porte atual; revisitar se a prestação de contas exigir valor exato. |
+| D-04 | **Cancelar uma entrada cujo estoque já saiu é bloqueado** (erro 50001, mensagem "o estoque atual ficaria negativo"). | Consequência direta da regra "estoque nunca negativo". O usuário deve cancelar antes as saídas correspondentes. |
+| D-05 | **Erros de negócio do banco**: 50001 estoque insuficiente, 50002 movimentação imutável, 50003 transição de status inválida, 50004/50005 DELETE bloqueado. | A aplicação traduz esses números em mensagens amigáveis. |
+| D-06 | **`numero_movimentacao` = `MOV-AAAA-NNNNNN`** via `SEQUENCE` global; o número não reinicia por ano. Valores consumidos por inserções que falharam ficam "pulados". | Simples e único. Lacunas na numeração são normais com SEQUENCE. |
+| D-07 | **Healthcheck do SQL Server** procura `sqlcmd` em `/opt/mssql-tools18/bin` e em `/opt/mssql-tools/bin`. O migrator também tem retry (até 120 s no compose). **[confirmar na T0.4]**: o Docker não estava disponível na máquina de desenvolvimento, então a existência do `sqlcmd` na imagem `2025-CU9-ubuntu-24.04` não foi verificada. Se não existir, trocar a condição do `migrator` para `service_started` e remover o healthcheck. | Plano, T0.4. |
+| D-08 | **Tags de imagem fixadas**: `mssql/server:2025-CU9-ubuntu-24.04` (CU mais recente listado no MCR em 08/10/2026), `caddy:2.11.7`, `portainer-ce:2.39.8`. **[confirmar]** se a linha 2.39 é a LTS vigente do Portainer. `dotnet/sdk:10.0` e `aspnet:10.0` ficam na tag de minor (recebem patches). | Plano, T0.4 / S22. |
+| D-09 | **Logs da aplicação só no console** (rotacionados pelo `json-file` do Docker, 5 × 10 MB). Sem volume `applogs` no MVP. | Evita mais um volume gravável num container `read_only`. Revisar na Fase 8 (E8.4). |
+| D-10 | **Usuários demo** (`SEED_DEMO_DATA=true`): `operacional@<dominio>` e `visualizador@<dominio>`, com a mesma senha do admin e sem troca obrigatória. Só para ensaio; nunca usar com dados reais. | Facilita o roteiro de teste e o smoke test. |
+| D-11 | **Quantidade mínima é editada na tela do item, para a unidade selecionada no cabeçalho.** | O catálogo é do tenant, mas o mínimo é por unidade (A03). |
+| D-12 | **Senhas do `estoque_app`/`estoque_maint` são reaplicadas a cada `--migrate`** (`ALTER LOGIN`). | Mantém o banco sincronizado com o `.env`. Trocar a senha = editar o `.env` e subir de novo. |
+| D-13 | **"Farinha de rosa 500 g" do Apêndice A foi semeado como "Farinha de rosca 500 g".** | Provável erro de digitação na planilha. |
+| D-14 | **Compressão PAGE**: `sp_estimate_data_compression_savings` com a carga demo (147 linhas de auditoria) não é conclusivo (104 KB → 104 KB). **[pendente]** repetir após algumas semanas de uso real. | T1.5. |
+| D-15 | **Saída com valor unitário vazio** usa o preço estimado do item (ou 0). Esse valor é só informativo; o estoque baixa pelo custo médio. | A10 / Q04. |
+| D-16 | **Banco local de dev**: na máquina do desenvolvedor já existia um `EstoqueDoacoes` criado pelo `Cria_Banco.sql` original. Para não alterá-lo, o `appsettings.Local.json` aponta para `EstoqueDoacoesMvp`. No Docker o nome continua `EstoqueDoacoes`. | Preservar dados existentes. |

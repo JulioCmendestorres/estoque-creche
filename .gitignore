@@ -1,0 +1,14 @@
+# segredos
+.env
+secrets/*
+!secrets/.gitkeep
+appsettings.Local.json
+
+# build
+bin/
+obj/
+logs/
+*.user
+.vs/
+.vscode/
+TestResults/

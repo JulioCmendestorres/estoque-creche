@@ -1,0 +1,29 @@
+@model IReadOnlyList<EstoqueUnidade>
+@{ var total = (int)ViewBag.Total; }
+<div class="dropdown">
+    <button class="btn btn-light position-relative" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Alertas de estoque baixo: @total">
+        <i class="bi bi-bell"></i>
+        @if (total > 0)
+        {
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">@total</span>
+        }
+    </button>
+    <div class="dropdown-menu dropdown-menu-end p-0" style="min-width: 300px">
+        <div class="px-3 py-2 border-bottom fw-semibold">Estoque baixo</div>
+        @if (total == 0)
+        {
+            <div class="px-3 py-3 text-muted small">Nenhum item abaixo do mínimo.</div>
+        }
+        else
+        {
+            @foreach (var a in Model)
+            {
+                <div class="px-3 py-2 border-bottom small d-flex justify-content-between gap-3">
+                    <span>@a.Item!.Nome</span>
+                    <span class="text-danger fw-semibold text-nowrap">@a.QuantidadeAtual / mín. @a.QuantidadeMinima</span>
+                </div>
+            }
+            <a class="dropdown-item text-center small py-2" asp-controller="Home" asp-action="Index">Ver no dashboard</a>
+        }
+    </div>
+</div>
