@@ -172,7 +172,7 @@ else
                         </div>
                         <div class="col-md-8">
                             <label for="Entrada_ItemId_busca" class="form-label">Item <span class="text-danger">*</span></label>
-                            @await Html.PartialAsync("_BuscaItem", new BuscaItemModel("Entrada_ItemId", "Entrada.ItemId", "entrada", Model.ItemEntrada, IdUnidadeAlvo: "Entrada_Unidade"))
+                            @await Html.PartialAsync("_BuscaItem", new BuscaItemModel("Entrada_ItemId", "Entrada.ItemId", "entrada", Model.ItemEntrada, IdUnidadeAlvo: "Entrada_Unidade", IdValorAlvo: "Entrada_ValorUnitario"))
                         </div>
                         <div class="col-6 col-md-3">
                             <label asp-for="Entrada.Quantidade" class="form-label"></label> <span class="text-danger">*</span>

@@ -4,6 +4,7 @@
      data-url="@Url.Action("Buscar", "Itens")"
      data-modo="@Model.Modo"
      data-unidade-alvo="@Model.IdUnidadeAlvo"
+     data-valor-alvo="@Model.IdValorAlvo"
      data-obrigatorio="@(Model.Obrigatorio ? "true" : "false")">
     <input type="text" id="@(Model.IdCampo)_busca" class="form-control" autocomplete="off" spellcheck="false"
            role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="@(Model.IdCampo)_lista"

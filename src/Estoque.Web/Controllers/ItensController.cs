@@ -66,6 +66,7 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
                 i.Nome,
                 i.CodigoInterno,
                 i.UnidadeMedida,
+                i.PrecoEstimado,
                 Saldo = db.Estoques.Where(e => e.ItemId == i.Id).Select(e => (int?)e.QuantidadeAtual).FirstOrDefault() ?? 0,
             })
             .ToListAsync();

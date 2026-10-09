@@ -253,7 +253,8 @@ public record BuscaItemModel(
     string Modo,                 // "entrada", "saida" ou "filtro"
     Item? Selecionado = null,
     bool Obrigatorio = true,
-    string? IdUnidadeAlvo = null);   // input somente leitura que recebe a unidade do item escolhido
+    string? IdUnidadeAlvo = null,    // input somente leitura que recebe a unidade do item escolhido
+    string? IdValorAlvo = null);     // input editável que recebe o preço estimado cadastrado no item
 
 public class UnidadeOpcao
 {

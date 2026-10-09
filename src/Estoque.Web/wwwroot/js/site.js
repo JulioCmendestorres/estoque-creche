@@ -17,6 +17,17 @@ function iniciarBuscaItem(box) {
 
     const definirAlvo = valor => { if (alvo) alvo.value = valor || ""; };
 
+    // Preço estimado do item preenche o valor, mas o campo continua editável. Se a pessoa já digitou
+    // outro valor, uma nova escolha de item não o sobrescreve (data-auto marca o que foi preenchido aqui).
+    const valorAlvo = box.dataset.valorAlvo ? document.getElementById(box.dataset.valorAlvo) : null;
+    if (valorAlvo) valorAlvo.addEventListener("input", () => { valorAlvo.dataset.auto = "0"; });
+    const preencherValor = preco => {
+        if (!valorAlvo) return;
+        if (valorAlvo.value.trim() !== "" && valorAlvo.dataset.auto !== "1") return;
+        valorAlvo.value = preco == null ? "" : Number(preco).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        valorAlvo.dataset.auto = "1";
+    };
+
     function fechar() {
         lista.hidden = true;
         txt.setAttribute("aria-expanded", "false");
@@ -37,6 +48,7 @@ function iniciarBuscaItem(box) {
         txt.value = it.nome;
         txt.classList.remove("is-invalid");
         definirAlvo(it.unidadeMedida);
+        preencherValor(it.precoEstimado);
         fechar();
     }
 
