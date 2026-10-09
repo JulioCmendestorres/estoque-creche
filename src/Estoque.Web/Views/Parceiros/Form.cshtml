@@ -24,10 +24,10 @@
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label asp-for="CpfCnpj" class="form-label"></label>
-                    <input asp-for="CpfCnpj" class="form-control" inputmode="numeric" />
-                    <div class="form-text">Opcional. CPF para pessoa física; CNPJ para empresa/organização.</div>
-                    <span asp-validation-for="CpfCnpj" class="text-danger small"></span>
+                    <label asp-for="Cnpj" class="form-label"></label>
+                    <input asp-for="Cnpj" class="form-control" inputmode="numeric" autocomplete="off" />
+                    <div class="form-text">Opcional. Por segurança, não registramos CPF de pessoas.</div>
+                    <span asp-validation-for="Cnpj" class="text-danger small"></span>
                 </div>
                 <div class="col-md-4">
                     <label asp-for="Email" class="form-label"></label>

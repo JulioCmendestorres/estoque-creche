@@ -1,11 +1,11 @@
 @model IReadOnlyList<EstoqueUnidade>
 @{ var total = (int)ViewBag.Total; }
 <div class="dropdown">
-    <button class="btn btn-light position-relative" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Alertas de estoque baixo: @total">
+    <button class="btn btn-light sino-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Alertas de estoque baixo: @total">
         <i class="bi bi-bell"></i>
         @if (total > 0)
         {
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">@total</span>
+            <span class="sino-badge badge rounded-pill bg-danger">@(total > 99 ? "99+" : total.ToString())</span>
         }
     </button>
     <div class="dropdown-menu dropdown-menu-end p-0" style="min-width: 300px">

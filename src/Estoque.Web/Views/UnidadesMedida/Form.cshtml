@@ -1,0 +1,28 @@
+@model UnidadeMedidaInput
+@{
+    var novo = Model.Id == 0;
+    ViewData["Title"] = novo ? "Nova unidade de medida" : "Editar unidade de medida";
+}
+<div class="page-header"><h1>@ViewData["Title"]</h1></div>
+<div class="card" style="max-width: 600px">
+    <div class="card-body">
+        <form asp-action="@(novo ? "Criar" : "Editar")" asp-route-id="@(novo ? null : Model.Id)" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+            <div class="mb-3">
+                <label asp-for="Codigo" class="form-label"></label> @if (novo) { <span class="text-danger">*</span> }
+                <input asp-for="Codigo" class="form-control" maxlength="10" readonly="@(!novo)" placeholder="ex.: kg, cx, fardo" />
+                <div class="form-text">@(novo ? "Até 10 caracteres, sem espaços. Não pode ser alterada depois." : "A sigla não pode ser alterada: os itens já cadastrados a utilizam.")</div>
+                <span asp-validation-for="Codigo" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Descricao" class="form-label"></label> <span class="text-danger">*</span>
+                <input asp-for="Descricao" class="form-control" maxlength="50" placeholder="ex.: Quilograma" />
+                <span asp-validation-for="Descricao" class="text-danger small"></span>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>

@@ -92,7 +92,7 @@ public class RegrasBancoTests(BancoFixture db)
     {
         await using var c = await db.AbrirAsync();
         var s = await NovoTenant(c);
-        const string sql = "INSERT INTO parceiros (tenant_id, nome, tipo, cpf_cnpj) VALUES (@t, @n, @tipo, @doc)";
+        const string sql = "INSERT INTO parceiros (tenant_id, nome, tipo, cnpj) VALUES (@t, @n, @tipo, @doc)";
         await Exec(c, sql, ("@t", s.Tenant), ("@n", "PF 1"), ("@tipo", "pessoa_fisica"), ("@doc", null));
         await Exec(c, sql, ("@t", s.Tenant), ("@n", "PF 2"), ("@tipo", "pessoa_fisica"), ("@doc", null));
         await Exec(c, sql, ("@t", s.Tenant), ("@n", "Empresa 1"), ("@tipo", "empresa"), ("@doc", "11222333000181"));
@@ -100,6 +100,51 @@ public class RegrasBancoTests(BancoFixture db)
         var ex = await Assert.ThrowsAsync<SqlException>(() =>
             Exec(c, sql, ("@t", s.Tenant), ("@n", "Empresa 2"), ("@tipo", "empresa"), ("@doc", "11222333000181")));
         Assert.Equal(2601, ex.Number);
+    }
+
+    [Theory]
+    [InlineData("12345678901")]        // CPF (11 dígitos)
+    [InlineData("123.456.789-01")]     // CPF formatado
+    [InlineData("1122233300018")]      // 13 dígitos
+    [InlineData("1122233300018A")]     // 14 caracteres, mas não só dígitos
+    public async Task Banco_recusa_qualquer_documento_que_nao_seja_CNPJ(string doc)
+    {
+        await using var c = await db.AbrirAsync();
+        var s = await NovoTenant(c);
+        var ex = await Assert.ThrowsAsync<SqlException>(() =>
+            Exec(c, "INSERT INTO parceiros (tenant_id, nome, tipo, cnpj) VALUES (@t, 'X', 'pessoa_fisica', @d)",
+                ("@t", s.Tenant), ("@d", doc)));
+        Assert.Contains("CK_parceiros_cnpj", ex.Message);
+    }
+
+    [Fact]
+    public async Task Item_nao_pode_usar_unidade_de_medida_de_outro_tenant()
+    {
+        await using var c = await db.AbrirAsync();
+        var a = await NovoTenant(c);
+        var b = await NovoTenant(c);
+        await Exec(c, "INSERT INTO unidades_medida (tenant_id, codigo, descricao) VALUES (@t, 'fardo', 'Fardo')", ("@t", b.Tenant));
+
+        // 'fardo' só existe no tenant B
+        var ex = await Assert.ThrowsAsync<SqlException>(() =>
+            Exec(c, "INSERT INTO itens (tenant_id, codigo_interno, nome, categoria_id, unidade_medida) VALUES (@t, 'Z9', 'Z', @c, 'fardo')",
+                ("@t", a.Tenant), ("@c", a.Categoria)));
+        Assert.Contains("FK_itens_unidade_medida", ex.Message);
+
+        // cada tenant pode ter a sua própria "fardo"
+        await Exec(c, "INSERT INTO unidades_medida (tenant_id, codigo, descricao) VALUES (@t, 'fardo', 'Fardo A')", ("@t", a.Tenant));
+        await Exec(c, "INSERT INTO itens (tenant_id, codigo_interno, nome, categoria_id, unidade_medida) VALUES (@t, 'Z9', 'Z', @c, 'fardo')",
+            ("@t", a.Tenant), ("@c", a.Categoria));
+    }
+
+    [Fact]
+    public async Task Sigla_de_unidade_nao_repete_no_mesmo_tenant()
+    {
+        await using var c = await db.AbrirAsync();
+        var s = await NovoTenant(c);
+        var ex = await Assert.ThrowsAsync<SqlException>(() =>
+            Exec(c, "INSERT INTO unidades_medida (tenant_id, codigo, descricao) VALUES (@t, 'KG', 'outro')", ("@t", s.Tenant)));
+        Assert.Equal(2627, ex.Number); // collation sem distinção de maiúsculas
     }
 
     [Fact]

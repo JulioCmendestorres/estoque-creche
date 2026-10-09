@@ -62,7 +62,7 @@ curl -fsS http://127.0.0.1:8080/healthz
 ## Estrutura
 
 ```
-db/migrations/      V001 schema · V002 triggers · V003 manutenção (aplicados pelo migrator)
+db/migrations/      V001 schema · V002 triggers · V003 manutenção · V004 só CNPJ + unidades por tenant (aplicados pelo migrator)
 docs/               DECISOES.md · DEPLOY.md · referencia/Cria_Banco.sql (original)
 src/Estoque.Web/    Controllers · Data (DbContext, Migrator, Seed, Interceptors) · Services · Views
 tests/Estoque.Tests regras do banco (T1.4), migrator (T1.3), isolamento de tenant (T2.2)
@@ -82,7 +82,8 @@ scripts/            smoke.sh · server-bootstrap.sh
 | S07 | `[Authorize]` global + policies; ViewModels | ✔ visualizador/operacional recebem acesso negado nas ações restritas |
 | S08 | Filtro por tenant/unidade; ID de outro tenant → 404 | ✔ testado |
 | S09 | Só consultas parametrizadas | ✔ (DDL de login com escape no servidor) |
-| S10 | Validação server-side | ✔ DataAnnotations + CPF/CNPJ + regras no serviço e no banco |
+| S10 | Validação server-side | ✔ DataAnnotations + CNPJ + regras no serviço e no banco |
+| S26 | LGPD: minimizar dados pessoais | parcial: **CPF de pessoa não é mais registrado** (só CNPJ, opcional); restante na versão completa |
 | S11 | Sem stack trace em Production | ✔ `/Home/Erro` |
 | S12 | Container não-root, `read_only`, `cap_drop`, `no-new-privileges` | ✔ no compose (**não validado em Docker**, ver abaixo) |
 | S13 | Volume `dataprotection` | ✔ |

@@ -85,7 +85,7 @@ public class ParceirosController(EstoqueDbContext db) : Controller
         {
             var b = busca.Trim();
             var digitos = Documentos.SomenteDigitos(b);
-            q = q.Where(p => p.Nome.Contains(b) || (digitos.Length > 0 && p.CpfCnpj!.Contains(digitos)));
+            q = q.Where(p => p.Nome.Contains(b) || (digitos.Length > 0 && p.Cnpj!.Contains(digitos)));
         }
         ViewBag.Busca = busca;
         ViewBag.Inativos = inativos;
@@ -114,7 +114,7 @@ public class ParceirosController(EstoqueDbContext db) : Controller
         if (p is null) return NotFound();
         return View("Form", new ParceiroInput
         {
-            Id = p.Id, Nome = p.Nome, Tipo = p.Tipo, CpfCnpj = Documentos.Formatar(p.CpfCnpj) is "—" ? null : Documentos.Formatar(p.CpfCnpj),
+            Id = p.Id, Nome = p.Nome, Tipo = p.Tipo, Cnpj = p.Cnpj is null ? null : Documentos.Formatar(p.Cnpj),
             Email = p.Email, Telefone = p.Telefone, Endereco = p.Endereco,
         });
     }
@@ -145,10 +145,10 @@ public class ParceirosController(EstoqueDbContext db) : Controller
 
     private static void Aplicar(Parceiro p, ParceiroInput input)
     {
-        var doc = Documentos.SomenteDigitos(input.CpfCnpj);
+        var doc = Documentos.SomenteDigitos(input.Cnpj);
         p.Nome = input.Nome.Trim();
         p.Tipo = input.Tipo;
-        p.CpfCnpj = doc.Length == 0 ? null : doc;
+        p.Cnpj = doc.Length == 0 ? null : doc;
         p.Email = string.IsNullOrWhiteSpace(input.Email) ? null : input.Email.Trim();
         p.Telefone = string.IsNullOrWhiteSpace(input.Telefone) ? null : input.Telefone.Trim();
         p.Endereco = string.IsNullOrWhiteSpace(input.Endereco) ? null : input.Endereco.Trim();
@@ -160,7 +160,7 @@ public class ParceirosController(EstoqueDbContext db) : Controller
         catch (DbUpdateException ex) when (ErrosBanco.Unicidade(ex))
         {
             db.ChangeTracker.Clear();
-            ModelState.AddModelError(nameof(input.CpfCnpj), "Já existe um fornecedor com este CPF/CNPJ.");
+            ModelState.AddModelError(nameof(input.Cnpj), "Já existe um fornecedor com este CNPJ.");
             return false;
         }
     }

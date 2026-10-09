@@ -1,0 +1,15 @@
+@model BuscaItemModel
+@* Campo de busca de item: digita nome/código, escolhe na lista. O id escolhido vai no input oculto. *@
+<div class="busca-item" data-busca-item
+     data-url="@Url.Action("Buscar", "Itens")"
+     data-modo="@Model.Modo"
+     data-unidade-alvo="@Model.IdUnidadeAlvo"
+     data-obrigatorio="@(Model.Obrigatorio ? "true" : "false")">
+    <input type="text" id="@(Model.IdCampo)_busca" class="form-control" autocomplete="off" spellcheck="false"
+           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="@(Model.IdCampo)_lista"
+           placeholder="Digite o nome ou o código do item"
+           value="@Model.Selecionado?.Nome" />
+    <input type="hidden" id="@Model.IdCampo" name="@Model.NomeCampo" value="@Model.Selecionado?.Id" />
+    <div class="busca-item-lista list-group" id="@(Model.IdCampo)_lista" role="listbox" hidden></div>
+    <div class="invalid-feedback">Escolha um item da lista.</div>
+</div>
