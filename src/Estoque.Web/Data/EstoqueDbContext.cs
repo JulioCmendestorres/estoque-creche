@@ -86,11 +86,14 @@ public class EstoqueDbContext(DbContextOptions<EstoqueDbContext> options, ITenan
 
         mb.Entity<UnidadeMedida>(e =>
         {
-            e.ToTable("unidades_medida");
-            e.HasKey(x => x.Codigo);
+            e.ToTable("unidades_medida", t => t.HasTrigger("trg_unidades_medida_auditoria"));
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.TenantId).HasColumnName("tenant_id");
             e.Property(x => x.Codigo).HasColumnName("codigo");
             e.Property(x => x.Descricao).HasColumnName("descricao");
             e.Property(x => x.Ativo).HasColumnName("ativo");
+            e.Property(x => x.CriadoEm).HasColumnName("criado_em").HasDefaultValueSql("SYSUTCDATETIME()");
+            e.HasQueryFilter(x => x.TenantId == TenantAtual);
         });
 
         mb.Entity<Categoria>(e =>
@@ -152,7 +155,7 @@ public class EstoqueDbContext(DbContextOptions<EstoqueDbContext> options, ITenan
             e.Property(x => x.TenantId).HasColumnName("tenant_id");
             e.Property(x => x.Nome).HasColumnName("nome");
             e.Property(x => x.Tipo).HasColumnName("tipo");
-            e.Property(x => x.CpfCnpj).HasColumnName("cpf_cnpj");
+            e.Property(x => x.Cnpj).HasColumnName("cnpj");
             e.Property(x => x.Email).HasColumnName("email");
             e.Property(x => x.Telefone).HasColumnName("telefone");
             e.Property(x => x.Endereco).HasColumnName("endereco");

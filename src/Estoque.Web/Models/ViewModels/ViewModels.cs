@@ -128,8 +128,8 @@ public class ParceiroInput : IValidatableObject
     [RegularExpression("^(pessoa_fisica|empresa|organizacao)$", ErrorMessage = "Tipo inválido.")]
     public string Tipo { get; set; } = TiposParceiro.Empresa;
 
-    [StringLength(20), Display(Name = "CPF/CNPJ")]
-    public string? CpfCnpj { get; set; }
+    [StringLength(18), Display(Name = "CNPJ")]
+    public string? Cnpj { get; set; }
 
     [EmailAddress(ErrorMessage = "E-mail inválido."), StringLength(255), Display(Name = "E-mail")]
     public string? Email { get; set; }
@@ -142,13 +142,31 @@ public class ParceiroInput : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        var doc = Infrastructure.Documentos.SomenteDigitos(CpfCnpj);
+        var doc = Infrastructure.Documentos.SomenteDigitos(Cnpj);
         if (doc.Length == 0) yield break;
-        if (Tipo == TiposParceiro.PessoaFisica && !Infrastructure.Documentos.CpfValido(doc))
-            yield return new ValidationResult("CPF inválido.", [nameof(CpfCnpj)]);
-        else if (Tipo != TiposParceiro.PessoaFisica && !Infrastructure.Documentos.CnpjValido(doc))
-            yield return new ValidationResult("CNPJ inválido.", [nameof(CpfCnpj)]);
+        if (doc.Length == 11)
+            yield return new ValidationResult("Não registramos CPF. Informe apenas CNPJ ou deixe em branco.", [nameof(Cnpj)]);
+        else if (!Infrastructure.Documentos.CnpjValido(doc))
+            yield return new ValidationResult("CNPJ inválido.", [nameof(Cnpj)]);
     }
+}
+
+public class UnidadeMedidaInput
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Informe a sigla."), StringLength(10), Display(Name = "Sigla")]
+    [RegularExpression(@"^[A-Za-z0-9][A-Za-z0-9._-]*$", ErrorMessage = "Use letras, números, '.', '-' ou '_', sem espaços.")]
+    public string Codigo { get; set; } = "";
+
+    [Required(ErrorMessage = "Informe o nome."), StringLength(50), Display(Name = "Nome")]
+    public string Descricao { get; set; } = "";
+}
+
+public class UnidadeMedidaLinha
+{
+    public required UnidadeMedida Unidade { get; init; }
+    public int ItensUsando { get; init; }
 }
 
 // ---------------------------------------------------------------- Estoque
@@ -216,8 +234,10 @@ public class EstoqueIndexViewModel
     public IReadOnlyList<EstoqueUnidade> Saldos { get; init; } = [];
     public IReadOnlyList<Movimentacao> Movimentacoes { get; init; } = [];
     public FiltroMovimentacoes Filtro { get; init; } = new();
-    public IReadOnlyList<Item> ItensAtivos { get; init; } = [];
-    public IReadOnlyDictionary<int, int> SaldoPorItem { get; init; } = new Dictionary<int, int>();
+    // Itens são buscados sob demanda (/Itens/Buscar); aqui vão só os já escolhidos, para reexibir o formulário
+    public Item? ItemEntrada { get; init; }
+    public Item? ItemSaida { get; init; }
+    public Item? ItemFiltro { get; init; }
     public IReadOnlyList<Parceiro> Parceiros { get; init; } = [];
     public EntradaInput Entrada { get; init; } = new();
     public SaidaInput Saida { get; init; } = new();
@@ -225,6 +245,15 @@ public class EstoqueIndexViewModel
     public string NomeResponsavel { get; init; } = "";
     public string NomeUnidade { get; init; } = "";
 }
+
+/// <summary>Parâmetros do campo de busca de item (_BuscaItem): substitui o dropdown com todos os itens.</summary>
+public record BuscaItemModel(
+    string IdCampo,              // id do input oculto com o ItemId (ex.: Entrada_ItemId)
+    string NomeCampo,            // name enviado no POST (ex.: Entrada.ItemId)
+    string Modo,                 // "entrada", "saida" ou "filtro"
+    Item? Selecionado = null,
+    bool Obrigatorio = true,
+    string? IdUnidadeAlvo = null);   // input somente leitura que recebe a unidade do item escolhido
 
 public class UnidadeOpcao
 {

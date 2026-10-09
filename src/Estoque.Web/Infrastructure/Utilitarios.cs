@@ -77,20 +77,6 @@ public static class Documentos
 {
     public static string SomenteDigitos(string? s) => new((s ?? "").Where(char.IsAsciiDigit).ToArray());
 
-    public static bool CpfValido(string digitos)
-    {
-        if (digitos.Length != 11 || digitos.Distinct().Count() == 1) return false;
-        return Digito(digitos, 9, 10) == digitos[9] - '0' && Digito(digitos, 10, 11) == digitos[10] - '0';
-
-        static int Digito(string d, int n, int pesoInicial)
-        {
-            var soma = 0;
-            for (var i = 0; i < n; i++) soma += (d[i] - '0') * (pesoInicial - i);
-            var r = soma % 11;
-            return r < 2 ? 0 : 11 - r;
-        }
-    }
-
     public static bool CnpjValido(string digitos)
     {
         if (digitos.Length != 14 || digitos.Distinct().Count() == 1) return false;
@@ -109,7 +95,6 @@ public static class Documentos
 
     public static string Formatar(string? digitos) => digitos switch
     {
-        { Length: 11 } d => $"{d[..3]}.{d[3..6]}.{d[6..9]}-{d[9..]}",
         { Length: 14 } d => $"{d[..2]}.{d[2..5]}.{d[5..8]}/{d[8..12]}-{d[12..]}",
         null or "" => "—",
         var d => d,

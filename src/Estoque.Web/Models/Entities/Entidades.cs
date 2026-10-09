@@ -69,11 +69,15 @@ public class UsuarioUnidade : ITenantEntity
     public Unidade? Unidade { get; set; }
 }
 
-public class UnidadeMedida
+/// <summary>Unidade de medida cadastrável por tenant. O código (sigla) não muda depois de criado: itens o referenciam.</summary>
+public class UnidadeMedida : ITenantEntity
 {
+    public int Id { get; set; }
+    public int TenantId { get; set; }
     public string Codigo { get; set; } = "";
-    public string? Descricao { get; set; }
+    public string Descricao { get; set; } = "";
     public bool Ativo { get; set; } = true;
+    public DateTime CriadoEm { get; set; }
 }
 
 public class Categoria : ITenantEntity
@@ -122,7 +126,8 @@ public class Parceiro : ITenantEntity
     public int TenantId { get; set; }
     public string Nome { get; set; } = "";
     public string Tipo { get; set; } = TiposParceiro.Empresa;
-    public string? CpfCnpj { get; set; }
+    /// <summary>Só CNPJ (14 dígitos), opcional. CPF de pessoa não é registrado.</summary>
+    public string? Cnpj { get; set; }
     public string? Email { get; set; }
     public string? Telefone { get; set; }
     public string? Endereco { get; set; }

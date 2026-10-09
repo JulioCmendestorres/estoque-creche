@@ -27,7 +27,14 @@ public sealed class Seeder(string dbConnectionString, SeedOptions opt, ILogger l
     private static readonly string[] SenhasProibidas =
         ["troque-esta-senha", "TroqueEstaSenha", "changeme", "admin123456", "senha123456", "123456789012"];
 
-    private static readonly string[] Categorias = ["Alimento", "Roupa", "Brinquedo", "Higiene e limpeza", "Outros"];
+    // Ponto de partida; o tenant cadastra, renomeia e inativa unidades pela tela "Unidades de medida"
+    private static readonly (string Codigo, string Descricao)[] UnidadesPadrao =
+    [
+        ("unidade", "Unidade avulsa"), ("kg", "Quilograma"), ("litro", "Litro"), ("pacote", "Pacote"),
+        ("caixa", "Caixa"), ("lata", "Lata"), ("sache", "Sachê"),
+    ];
+
+    private static readonly string[] Categorias =["Alimento", "Roupa", "Brinquedo", "Higiene e limpeza", "Outros"];
 
     // Apêndice A do PLANO.md (lista parcial da planilha da creche)
     private static readonly (string Nome, string Unidade, decimal Preco)[] ItensDemo =
@@ -87,6 +94,11 @@ public sealed class Seeder(string dbConnectionString, SeedOptions opt, ILogger l
                 categorias[c] = await Inserir(conn, tx,
                     "INSERT INTO categorias_itens (tenant_id, nome) VALUES (@t, @n);", ct, P("@t", tenantId), P("@n", c));
 
+            foreach (var (codigo, descricao) in UnidadesPadrao)
+                await Inserir(conn, tx,
+                    "INSERT INTO unidades_medida (tenant_id, codigo, descricao) VALUES (@t, @c, @d);", ct,
+                    P("@t", tenantId), P("@c", codigo), P("@d", descricao));
+
             var adminId = await CriarUsuario(conn, tx, tenantId, "Administrador", opt.AdminEmail!,
                 hasher.HashPassword(null!, opt.AdminPassword!), Papeis.Admin, trocarSenha: true, [matrizId, filialId], ct);
 
@@ -116,7 +128,7 @@ public sealed class Seeder(string dbConnectionString, SeedOptions opt, ILogger l
             Papeis.Visualizador, trocarSenha: false, [matrizId], ct);
 
         var mercadoId = await Inserir(conn, tx, """
-            INSERT INTO parceiros (tenant_id, nome, tipo, cpf_cnpj, telefone) VALUES (@t, N'Mercado Bom Preço (fictício)', 'empresa', '11222333000181', '(11) 4000-0000');
+            INSERT INTO parceiros (tenant_id, nome, tipo, cnpj, telefone) VALUES (@t, N'Mercado Bom Preço (fictício)', 'empresa', '11222333000181', '(11) 4000-0000');
             """, ct, P("@t", tenantId));
         await Inserir(conn, tx, """
             INSERT INTO parceiros (tenant_id, nome, tipo)

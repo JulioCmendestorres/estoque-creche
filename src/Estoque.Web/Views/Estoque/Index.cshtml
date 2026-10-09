@@ -91,14 +91,8 @@ else
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label small" for="ItemId">Item</label>
-                <select id="ItemId" name="ItemId" class="form-select">
-                    <option value="">Todos</option>
-                    @foreach (var i in Model.ItensAtivos)
-                    {
-                        <option value="@i.Id" selected="@(i.Id == Model.Filtro.ItemId)">@i.Nome</option>
-                    }
-                </select>
+                <label class="form-label small" for="ItemId_busca">Item</label>
+                @await Html.PartialAsync("_BuscaItem", new BuscaItemModel("ItemId", "ItemId", "filtro", Model.ItemFiltro, Obrigatorio: false))
             </div>
             <div class="col-md-2 d-grid"><button class="btn btn-outline-primary" type="submit"><i class="bi bi-funnel"></i> Filtrar</button></div>
         </div>
@@ -177,14 +171,8 @@ else
                             </select>
                         </div>
                         <div class="col-md-8">
-                            <label asp-for="Entrada.ItemId" class="form-label"></label> <span class="text-danger">*</span>
-                            <select asp-for="Entrada.ItemId" class="form-select" data-unidade-alvo="Entrada_Unidade" required>
-                                <option value="">Selecione...</option>
-                                @foreach (var i in Model.ItensAtivos)
-                                {
-                                    <option value="@i.Id" data-unidade="@i.UnidadeMedida">@i.Nome</option>
-                                }
-                            </select>
+                            <label for="Entrada_ItemId_busca" class="form-label">Item <span class="text-danger">*</span></label>
+                            @await Html.PartialAsync("_BuscaItem", new BuscaItemModel("Entrada_ItemId", "Entrada.ItemId", "entrada", Model.ItemEntrada, IdUnidadeAlvo: "Entrada_Unidade"))
                         </div>
                         <div class="col-6 col-md-3">
                             <label asp-for="Entrada.Quantidade" class="form-label"></label> <span class="text-danger">*</span>
@@ -192,7 +180,7 @@ else
                         </div>
                         <div class="col-6 col-md-3">
                             <label class="form-label" for="Entrada_Unidade">Unidade</label>
-                            <input id="Entrada_Unidade" class="form-control" readonly tabindex="-1" />
+                            <input id="Entrada_Unidade" class="form-control" readonly tabindex="-1" value="@Model.ItemEntrada?.UnidadeMedida" />
                         </div>
                         <div class="col-6 col-md-3">
                             <label asp-for="Entrada.ValorUnitario" class="form-label"></label>
@@ -247,15 +235,8 @@ else
                     }
                     <div class="row g-3">
                         <div class="col-md-8">
-                            <label asp-for="Saida.ItemId" class="form-label"></label> <span class="text-danger">*</span>
-                            <select asp-for="Saida.ItemId" class="form-select" data-unidade-alvo="Saida_Unidade" required>
-                                <option value="">Selecione...</option>
-                                @foreach (var i in Model.ItensAtivos)
-                                {
-                                    var saldo = Model.SaldoPorItem.TryGetValue(i.Id, out var sq) ? sq : 0;
-                                    <option value="@i.Id" data-unidade="@i.UnidadeMedida" disabled="@(saldo == 0)">@i.Nome (saldo: @saldo)</option>
-                                }
-                            </select>
+                            <label for="Saida_ItemId_busca" class="form-label">Item <span class="text-danger">*</span></label>
+                            @await Html.PartialAsync("_BuscaItem", new BuscaItemModel("Saida_ItemId", "Saida.ItemId", "saida", Model.ItemSaida, IdUnidadeAlvo: "Saida_Unidade"))
                         </div>
                         <div class="col-md-4">
                             <label asp-for="Saida.TipoSaida" class="form-label"></label>
@@ -271,7 +252,7 @@ else
                         </div>
                         <div class="col-6 col-md-3">
                             <label class="form-label" for="Saida_Unidade">Unidade</label>
-                            <input id="Saida_Unidade" class="form-control" readonly tabindex="-1" />
+                            <input id="Saida_Unidade" class="form-control" readonly tabindex="-1" value="@Model.ItemSaida?.UnidadeMedida" />
                         </div>
                         <div class="col-6 col-md-3">
                             <label asp-for="Saida.ValorUnitario" class="form-label"></label>

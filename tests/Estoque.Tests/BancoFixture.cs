@@ -83,6 +83,8 @@ public static class Sql
             ("@t", t), ("@e", $"u{sufixo}@teste.local"));
         await Exec(c, "INSERT INTO usuarios_unidades (tenant_id, usuario_id, unidade_id) VALUES (@t, @u, @m), (@t, @u, @f)",
             ("@t", t), ("@u", u), ("@m", m), ("@f", f));
+        await Exec(c, "INSERT INTO unidades_medida (tenant_id, codigo, descricao) VALUES (@t, 'pacote', 'Pacote'), (@t, 'kg', 'Quilograma')",
+            ("@t", t));
         var cat = await Id(c, "INSERT INTO categorias_itens (tenant_id, nome) VALUES (@t, 'Alimento')", ("@t", t));
         var item = await Id(c, "INSERT INTO itens (tenant_id, codigo_interno, nome, categoria_id, unidade_medida) VALUES (@t, 'A1', 'Arroz', @c, 'pacote')",
             ("@t", t), ("@c", cat));

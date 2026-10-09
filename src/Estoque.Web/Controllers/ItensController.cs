@@ -41,6 +41,37 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
         });
     }
 
+    /// <summary>
+    /// Busca incremental para os formulários de movimentação: todos os termos digitados precisam
+    /// aparecer no nome ou no código (sem distinguir acento/maiúscula). Devolve no máximo 20 itens
+    /// ativos do tenant, com o saldo da unidade atual. O filtro de tenant vem do DbContext.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> Buscar(string? q)
+    {
+        var texto = (q ?? "").Trim();
+        if (texto.Length > 100) texto = texto[..100];
+        var termos = texto.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(5).ToList();
+
+        var query = db.Itens.Where(i => i.Ativo);
+        foreach (var termo in termos)
+            query = query.Where(i => i.Nome.Contains(termo) || i.CodigoInterno.Contains(termo));
+
+        var itens = await query
+            .OrderBy(i => i.Nome)
+            .Take(20)
+            .Select(i => new
+            {
+                i.Id,
+                i.Nome,
+                i.CodigoInterno,
+                i.UnidadeMedida,
+                Saldo = db.Estoques.Where(e => e.ItemId == i.Id).Select(e => (int?)e.QuantidadeAtual).FirstOrDefault() ?? 0,
+            })
+            .ToListAsync();
+        return Json(itens);
+    }
+
     [Authorize(Policy = Policies.PodeEditar)]
     public async Task<IActionResult> Criar() => View("Form", await MontarForm(new ItemInput()));
 
@@ -89,7 +120,7 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
         var item = await db.Itens.FirstOrDefaultAsync(i => i.Id == id);
         if (item is null) return NotFound();
         input.Id = id;
-        await ValidarReferencias(input);
+        await ValidarReferencias(input, unidadeAtualDoItem: item.UnidadeMedida);
         if (string.IsNullOrWhiteSpace(input.CodigoInterno))
             ModelState.AddModelError(nameof(input.CodigoInterno), "Informe o código interno.");
         if (!ModelState.IsValid) return View("Form", await MontarForm(input));
@@ -125,11 +156,12 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
         item.Descricao = string.IsNullOrWhiteSpace(input.Descricao) ? null : input.Descricao.Trim();
     }
 
-    private async Task ValidarReferencias(ItemInput input)
+    private async Task ValidarReferencias(ItemInput input, string? unidadeAtualDoItem = null)
     {
         if (input.CategoriaId is > 0 && !await db.Categorias.AnyAsync(c => c.Id == input.CategoriaId && c.Ativo))
             ModelState.AddModelError(nameof(input.CategoriaId), "Categoria inválida.");
-        if (!await db.UnidadesMedida.AnyAsync(u => u.Codigo == input.UnidadeMedida && u.Ativo))
+        // Um item pode manter a unidade que já tinha, mesmo inativada depois; trocar exige unidade ativa
+        if (!await db.UnidadesMedida.AnyAsync(u => u.Codigo == input.UnidadeMedida && (u.Ativo || u.Codigo == unidadeAtualDoItem)))
             ModelState.AddModelError(nameof(input.UnidadeMedida), "Unidade de medida inválida.");
     }
 
@@ -178,7 +210,9 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
     {
         Input = input,
         Categorias = await db.Categorias.Where(c => c.Ativo || c.Id == input.CategoriaId).OrderBy(c => c.Nome).ToListAsync(),
-        UnidadesMedida = await db.UnidadesMedida.Where(u => u.Ativo).OrderBy(u => u.Descricao).ToListAsync(),
+        // mantém a unidade atual do item mesmo que tenha sido inativada depois
+        UnidadesMedida = await db.UnidadesMedida.Where(u => u.Ativo || u.Codigo == input.UnidadeMedida)
+            .OrderBy(u => u.Descricao).ToListAsync(),
         NomeUnidade = User.FindFirst(ClaimsApp.UnidadeNome)?.Value ?? "",
     };
 }
