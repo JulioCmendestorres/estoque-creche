@@ -1,0 +1,34 @@
+# OPCIONAL — gestão visual dos containers (Portainer). Não faz parte da instalação normal.
+#
+#   printf '%s' '<senha com 12+ caracteres>' > secrets/portainer_admin_password.txt
+#   docker compose -f compose.yaml -f compose.portainer.yaml up -d
+#
+# Abre em https://localhost:9443 (somente neste servidor; de fora, use túnel SSH).
+# Atenção: montar o docker.sock equivale a acesso root ao servidor, e o admin do Portainer enxerga as
+# variáveis de ambiente dos containers (inclusive senhas). Não exponha esta porta na rede.
+services:
+  portainer:
+    image: portainer/portainer-ce:2.39.8
+    command: ["--admin-password-file=/run/secrets/portainer_admin_password"]
+    secrets: [portainer_admin_password]
+    ports:
+      - "127.0.0.1:9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    security_opt: ["no-new-privileges:true"]
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+    restart: unless-stopped
+    networks: [tools]
+
+networks:
+  tools: {}
+
+secrets:
+  portainer_admin_password:
+    file: ./secrets/portainer_admin_password.txt
+
+volumes:
+  portainer_data:

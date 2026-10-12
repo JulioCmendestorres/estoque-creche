@@ -3,6 +3,9 @@
 secrets/*
 !secrets/.gitkeep
 appsettings.Local.json
+.env.bak
+credenciais*
+senhas*
 
 # build
 bin/

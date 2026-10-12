@@ -3,7 +3,7 @@
 # Instala Docker Engine + Compose v2 pelo repositório OFICIAL (não snap), ufw, fail2ban,
 # unattended-upgrades, swap e sincronização de relógio.
 #
-# NÃO altera o sshd_config (passo manual em docs/DEPLOY.md, para não bloquear seu acesso).
+# NÃO altera o sshd_config (passo manual, mostrado no final, para não bloquear seu acesso).
 #
 # Uso: sudo MODO=C ./scripts/server-bootstrap.sh     # servidor caseiro (só 22 no ufw)
 #      sudo MODO=A ./scripts/server-bootstrap.sh     # VPS com domínio (22, 80, 443)
@@ -68,4 +68,13 @@ docker compose version
 free -h
 ufw status verbose | head -20
 echo
-echo "PRÓXIMO PASSO MANUAL: endurecer o SSH (docs/DEPLOY.md, seção 'SSH')."
+cat <<'FIM'
+PRÓXIMO PASSO MANUAL (recomendado): endurecer o SSH.
+  1. Confirme que você consegue entrar por CHAVE SSH (abra outra sessão e teste).
+  2. Crie /etc/ssh/sshd_config.d/10-endurecer.conf com:
+         PermitRootLogin no
+         PasswordAuthentication no
+         KbdInteractiveAuthentication no
+  3. sudo sshd -t && sudo systemctl reload ssh
+  4. Teste de novo o login por chave ANTES de fechar a sessão atual.
+FIM

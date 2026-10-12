@@ -1,5 +1,7 @@
 name: estoque-creche
 
+# Quem gera o .env (senhas, domínio, porta) é o scripts/instalar.sh — não é preciso editar nada à mão.
+
 x-logging: &logging
   driver: json-file
   options: { max-size: "10m", max-file: "5" }     # sem isso os logs do Docker enchem o disco
@@ -10,13 +12,29 @@ x-app: &app
   logging: *logging
   networks: [backend]
 
+# Único serviço exposto ao mundo: o Caddy. O banco e o web só existem dentro da rede do compose.
+x-proxy: &proxy
+  image: caddy:2.11.7
+  environment:
+    SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+  volumes:
+    - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+    - caddy_data:/data
+    - caddy_config:/config
+  depends_on:
+    web: { condition: service_healthy }
+  security_opt: ["no-new-privileges:true"]
+  logging: *logging
+  restart: unless-stopped
+  networks: [frontend]
+
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2025-CU9-ubuntu-24.04
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_PID: Express
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?defina no .env}
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?rode ./scripts/instalar.sh}
       MSSQL_MEMORY_LIMIT_MB: "1536"          # valores iniciais; ajustar após medir com docker stats
     volumes:
       - mssql_data:/var/opt/mssql
@@ -40,10 +58,10 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__Admin: "Server=sqlserver,1433;Database=master;User Id=sa;Password=${MSSQL_SA_PASSWORD};Encrypt=True;TrustServerCertificate=True"
       Database__Name: EstoqueDoacoes
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?defina no .env}
-      MAINT_DB_PASSWORD: ${MAINT_DB_PASSWORD:?defina no .env}
-      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:?defina no .env}
-      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?defina no .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?rode ./scripts/instalar.sh}
+      MAINT_DB_PASSWORD: ${MAINT_DB_PASSWORD:?rode ./scripts/instalar.sh}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@creche.local}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?rode ./scripts/instalar.sh}
       SEED_DEMO_DATA: ${SEED_DEMO_DATA:-false}
       Migrator__EsperaSegundos: "120"
     depends_on:
@@ -54,11 +72,10 @@ services:
     <<: *app
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
-      Cookie__SecurePolicy: ${COOKIE_SECURE_POLICY:-SameAsRequest}   # Always quando usar HTTPS
+      Cookie__SecurePolicy: ${COOKIE_SECURE_POLICY:-SameAsRequest}   # o instalar.sh usa Always quando há domínio (HTTPS)
       ConnectionStrings__Default: "Server=sqlserver,1433;Database=EstoqueDoacoes;User Id=estoque_app;Password=${APP_DB_PASSWORD};Encrypt=True;TrustServerCertificate=True"
-      ForwardedHeaders__RedesConfiaveis: ${FORWARDED_TRUSTED_NETWORKS:-172.16.0.0/12}
-    ports:
-      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}:8080"   # padrão: só loopback
+      # Sem "ports:": só o Caddy (rede interna do compose) alcança o web, então confiar nas faixas privadas é seguro
+      ForwardedHeaders__RedesConfiaveis: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
     volumes:
       - dataprotection:/home/app/.aspnet/DataProtection-Keys
     depends_on:
@@ -76,55 +93,28 @@ services:
     restart: unless-stopped
     networks: [frontend, backend]
 
-  proxy:
-    image: caddy:2.11.7
-    profiles: ["https"]                   # só sobe na VPS com domínio (modo A)
-    environment:
-      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
-      ACME_EMAIL: ${ACME_EMAIL:-admin@example.com}   # no modo A usar um e-mail real
-      ACME_CA: ${ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
+  # SEM domínio: HTTP simples na porta escolhida (PORTA). Uso: rede local.
+  proxy-http:
+    <<: *proxy
+    profiles: ["http"]
+    ports:
+      - "${PORTA:-8080}:80"
+
+  # COM domínio: HTTPS automático (Let's Encrypt). Exige as portas 80 e 443 liberadas e o DNS apontando para o servidor.
+  proxy-https:
+    <<: *proxy
+    profiles: ["https"]
     ports:
       - "80:80"
       - "443:443"
       - "443:443/udp"
-    volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      web: { condition: service_healthy }
-    security_opt: ["no-new-privileges:true"]
-    logging: *logging
-    restart: unless-stopped
-    networks: [frontend]
-
-  portainer:
-    image: portainer/portainer-ce:2.39.8
-    profiles: ["tools"]
-    command: ["--admin-password-file=/run/secrets/portainer_admin_password"]
-    secrets: [portainer_admin_password]
-    ports:
-      - "${PORTAINER_BIND:-127.0.0.1}:9443:9443"   # UI HTTPS. NÃO publicar 9000 (HTTP) nem 8000 (agente Edge)
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # ≈ acesso root ao host: ver PLANO.md 6.5
-      - portainer_data:/data
-    security_opt: ["no-new-privileges:true"]
-    logging: *logging
-    restart: unless-stopped
-    networks: [tools]
 
 networks:
   frontend: {}
   backend: {}
-  tools: {}
-
-secrets:
-  portainer_admin_password:
-    file: ./secrets/portainer_admin_password.txt   # gitignored; 12+ caracteres, sem quebra de linha
 
 volumes:
   mssql_data:
   dataprotection:
   caddy_data:
   caddy_config:
-  portainer_data:

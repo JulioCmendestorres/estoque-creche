@@ -5,7 +5,7 @@
 #
 # Uso:  ./scripts/smoke.sh            (pede confirmação antes de apagar os volumes)
 #       SMOKE_SIM=1 ./scripts/smoke.sh
-#       SMOKE_URL_EXTERNA=https://estoque.exemplo.org ./scripts/smoke.sh   (modo A: confere /healthz externo)
+#       SMOKE_URL_EXTERNA=https://estoque.exemplo.org ./scripts/smoke.sh   (confere também o /healthz externo)
 #       SMOKE_BASE=http://localhost:5216 ./scripts/smoke.sh   (instância já no ar, sem Docker e sem apagar nada;
 #                                                             precisa de dados demo e das variáveis SEED_* no ambiente/.env)
 #
@@ -15,11 +15,13 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 if [ -f .env ]; then set -a; . ./.env; set +a
-elif [ -z "${SMOKE_BASE:-}" ]; then echo "Falta o arquivo .env (copie de .env.example)"; exit 1; fi
+elif [ -z "${SMOKE_BASE:-}" ]; then echo "Falta o arquivo .env (rode ./scripts/instalar.sh antes)"; exit 1; fi
 
-BASE="${SMOKE_BASE:-http://${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8080}}"
+if [ -n "${DOMINIO:-}" ]; then BASE_PADRAO="https://$DOMINIO"; else BASE_PADRAO="http://localhost:${PORTA:-8080}"; fi
+BASE="${SMOKE_BASE:-$BASE_PADRAO}"
 CODIGO="SMOKE-$(date +%s)"
-EMAIL="operacional@${SEED_ADMIN_EMAIL#*@}"
+EMAIL="operacional@${SEED_ADMIN_EMAIL:-admin@creche.local}"
+EMAIL="operacional@${EMAIL#*@}"
 SENHA="${SEED_ADMIN_PASSWORD:?SEED_ADMIN_PASSWORD vazio no .env}"
 JAR="$(mktemp)"; trap 'rm -f "$JAR"' EXIT
 

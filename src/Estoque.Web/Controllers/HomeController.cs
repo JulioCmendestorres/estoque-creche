@@ -15,8 +15,6 @@ public class HomeController(DashboardService dashboard) : Controller
 {
     public async Task<IActionResult> Index() => View(await dashboard.MontarAsync());
 
-    public IActionResult Sobre() => View();
-
     [AllowAnonymous]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Erro() =>
