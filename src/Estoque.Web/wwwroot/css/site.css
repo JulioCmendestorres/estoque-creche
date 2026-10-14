@@ -95,3 +95,20 @@ body { background: var(--app-bg); }
 .busca-item-vazio { padding: .6rem .9rem; color: var(--bs-secondary-color); font-size: .9rem; }
 
 [hidden] { display: none !important; }
+
+/* Relatórios: cabeçalho só na impressão; menu, barra e filtros somem no papel */
+.print-only { display: none; }
+@media print {
+    .sidebar, .topbar, .no-print, .alert-dismissible { display: none !important; }
+    .print-only { display: block; }
+    .app-shell, .main { display: block; min-height: 0; }
+    .main main, .main > * { padding: 0 !important; margin: 0 !important; }
+    body { background: #fff; font-size: 10pt; }
+    .card { border: 0; box-shadow: none; }
+    .table-responsive { overflow: visible; }
+    .tabela-relatorio { font-size: 8.5pt; }
+    .tabela-relatorio thead { display: table-header-group; }
+    .tabela-relatorio tr { break-inside: avoid; }
+    .badge { border: 1px solid #999; color: #000 !important; background: transparent !important; }
+    @page { size: A4 landscape; margin: 12mm; }
+}

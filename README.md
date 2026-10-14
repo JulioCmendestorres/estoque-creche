@@ -4,7 +4,8 @@ Sistema web (ASP.NET Core MVC + SQL Server) para controle de estoque e doações
 itens, fornecedores, entradas (doação/compra), saídas (uso interno/doação/avaria), saldo por unidade,
 alertas de estoque mínimo, dashboard e auditoria. Escopo e roadmap: [`PLANO.md`](PLANO.md).
 
-**Versão: MVP (Fases 0–4 do plano).** Relatórios PDF/CSV, gráficos, cadastro de usuários e tela de log ficam para a versão completa.
+**Versão: MVP (Fases 0–4 do plano) + relatórios (E5.2).** Relatório de movimentações com filtros, impressão, PDF e CSV.
+Gráficos, cadastro de usuários e tela de log ficam para a versão completa.
 
 ## Instalar no servidor
 
@@ -45,7 +46,7 @@ dotnet test
 db/migrations/      V001 schema · V002 triggers · V003 manutenção · V004 só CNPJ + unidades por tenant (aplicados pelo migrator)
 docs/               DEPLOY.md · DECISOES.md · referencia/Cria_Banco.sql (original)
 src/Estoque.Web/    Controllers · Data (DbContext, Migrator, Seed, Interceptors) · Services · Views
-tests/Estoque.Tests regras do banco (T1.4), migrator (T1.3), isolamento de tenant (T2.2)
+tests/Estoque.Tests regras do banco (T1.4), migrator (T1.3), isolamento de tenant (T2.2), relatórios (E5.2)
 scripts/            instalar.sh · smoke.sh · server-bootstrap.sh
 compose.yaml        sqlserver · migrator · web · proxy (Caddy)      compose.portainer.yaml  opcional
 ```
@@ -71,6 +72,7 @@ compose.yaml        sqlserver · migrator · web · proxy (Caddy)      compose.p
 | S15 | `returnUrl` local; mensagem de login genérica | ✔ |
 | S16 | Senha do admin gerada; troca obrigatória no 1º acesso | ✔ |
 | S17 | HTTPS via Caddy | ✔ automático quando há domínio |
+| S24 | CSV contra *formula injection*; PDF só com o filtro autorizado | ✔ testado (consolidado só admin, limitado às unidades do usuário) |
 | S26 | LGPD: minimizar dados pessoais | parcial: **CPF de pessoa não é registrado** (só CNPJ, opcional); restante na versão completa |
 | S29 | Servidor endurecido | `server-bootstrap.sh` (execução no servidor pendente) |
 | S30 | Portas publicadas | ✔ só o proxy (Caddy) publica porta; banco e web ficam na rede interna do compose |

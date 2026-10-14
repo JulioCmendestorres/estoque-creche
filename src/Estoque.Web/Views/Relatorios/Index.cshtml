@@ -1,0 +1,198 @@
+@model RelatorioIndexViewModel
+@{
+    ViewData["Title"] = "Relatórios";
+    var f = Model.Filtro;
+    var r = Model.Relatorio;
+    var rota = new Dictionary<string, string?>
+    {
+        ["De"] = f.De?.ToString("yyyy-MM-dd"),
+        ["Ate"] = f.Ate?.ToString("yyyy-MM-dd"),
+        ["Tipo"] = f.Tipo,
+        ["CategoriaId"] = f.CategoriaId?.ToString(),
+        ["ItemId"] = f.ItemId?.ToString(),
+        ["ParceiroId"] = f.ParceiroId?.ToString(),
+        ["IncluirCanceladas"] = f.IncluirCanceladas ? "true" : null,
+        ["Consolidado"] = f.Consolidado ? "true" : null,
+    };
+}
+<div class="page-header no-print">
+    <h1>Relatórios</h1>
+    <span class="badge text-bg-light border">Movimentações</span>
+    @if (r is not null)
+    {
+        <div class="ms-auto d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" data-imprimir><i class="bi bi-printer"></i> Imprimir</button>
+            <a class="btn btn-outline-danger" asp-action="Exportar" asp-route-formato="pdf" asp-all-route-data="rota"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+            <a class="btn btn-outline-success" asp-action="Exportar" asp-route-formato="csv" asp-all-route-data="rota"><i class="bi bi-filetype-csv"></i> CSV</a>
+        </div>
+    }
+</div>
+
+<form method="get" asp-action="Index" class="card mb-3 no-print">
+    <div class="card-body row g-2 align-items-end">
+        <div class="col-6 col-md-2">
+            <label class="form-label small" for="De">De</label>
+            <input type="date" id="De" name="De" value="@f.De?.ToString("yyyy-MM-dd")" class="form-control" required />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small" for="Ate">Até</label>
+            <input type="date" id="Ate" name="Ate" value="@f.Ate?.ToString("yyyy-MM-dd")" class="form-control" required />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small" for="Tipo">Tipo de movimentação</label>
+            <select id="Tipo" name="Tipo" class="form-select">
+                <option value="">Todas</option>
+                <optgroup label="Entradas (origem)">
+                    <option value="@FiltroRelatorio.TodasEntradas" selected="@(f.Tipo == FiltroRelatorio.TodasEntradas)">Todas as entradas</option>
+                    @foreach (var t in TiposMovimentacao.Entradas)
+                    {
+                        <option value="@t" selected="@(f.Tipo == t)">@TiposMovimentacao.Rotulo(t)</option>
+                    }
+                </optgroup>
+                <optgroup label="Saídas (tipo de saída)">
+                    <option value="@FiltroRelatorio.TodasSaidas" selected="@(f.Tipo == FiltroRelatorio.TodasSaidas)">Todas as saídas</option>
+                    @foreach (var t in TiposMovimentacao.Saidas)
+                    {
+                        <option value="@t" selected="@(f.Tipo == t)">@TiposMovimentacao.Rotulo(t)</option>
+                    }
+                </optgroup>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small" for="CategoriaId">Tipo de item</label>
+            <select id="CategoriaId" name="CategoriaId" class="form-select">
+                <option value="">Todos</option>
+                @foreach (var c in Model.Categorias)
+                {
+                    <option value="@c.Id" selected="@(f.CategoriaId == c.Id)">@c.Nome@(c.Ativo ? "" : " (inativa)")</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small" for="ParceiroId">Fornecedor / doador</label>
+            <select id="ParceiroId" name="ParceiroId" class="form-select">
+                <option value="">Todos</option>
+                @foreach (var p in Model.Parceiros)
+                {
+                    <option value="@p.Id" selected="@(f.ParceiroId == p.Id)">@p.Nome@(p.Ativo ? "" : " (inativo)")</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small" for="ItemId_busca">Item</label>
+            @await Html.PartialAsync("_BuscaItem", new BuscaItemModel("ItemId", "ItemId", "relatorio", Model.ItemFiltro, Obrigatorio: false))
+        </div>
+        <div class="col-md-5 d-flex flex-wrap gap-3 pb-2">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="IncluirCanceladas" name="IncluirCanceladas" value="true" checked="@f.IncluirCanceladas" />
+                <label class="form-check-label small" for="IncluirCanceladas">Incluir canceladas</label>
+            </div>
+            @if (Model.PodeConsolidar)
+            {
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="Consolidado" name="Consolidado" value="true" checked="@f.Consolidado" />
+                    <label class="form-check-label small" for="Consolidado">Todas as unidades (consolidado)</label>
+                </div>
+            }
+        </div>
+        <div class="col-md-3 d-grid"><button class="btn btn-primary" type="submit"><i class="bi bi-funnel"></i> Gerar relatório</button></div>
+    </div>
+</form>
+
+@if (Model.Erro is not null)
+{
+    <div class="alert alert-danger">@Model.Erro</div>
+}
+
+@if (r is not null)
+{
+    <div class="relatorio">
+        <div class="print-only mb-2">
+            <div class="small text-muted">@r.NomeOrganizacao</div>
+            <h1 class="h4 mb-0">Relatório de movimentações — @r.Abrangencia</h1>
+            <div class="small">Gerado em @Tempo.Formatar(r.GeradoEmUtc) por @r.GeradoPor</div>
+        </div>
+        <p class="small text-muted mb-2">@string.Join(" · ", r.FiltrosDescritos)</p>
+
+        <div class="row g-3 mb-3">
+            <div class="col-6 col-lg-3">
+                <div class="card h-100"><div class="card-body py-2">
+                    <div class="small text-muted">Total de entradas</div>
+                    <div class="fs-5 fw-semibold text-success">@Formatos.Moeda(r.TotalEntradas)</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="card h-100"><div class="card-body py-2">
+                    <div class="small text-muted">Total de saídas</div>
+                    <div class="fs-5 fw-semibold text-danger">@Formatos.Moeda(r.TotalSaidas)</div>
+                </div></div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card h-100">
+                    <table class="table table-sm mb-0 small">
+                        <thead class="table-light"><tr><th>Tipo</th><th class="text-end">Movimentações</th><th class="text-end">Valor total</th></tr></thead>
+                        <tbody>
+                        @if (r.Resumo.Count == 0)
+                        {
+                            <tr><td colspan="3" class="text-muted">Nenhuma movimentação processada no filtro.</td></tr>
+                        }
+                        @foreach (var x in r.Resumo)
+                        {
+                            <tr>
+                                <td><span class="badge @(x.EhEntrada ? "badge-entrada" : "badge-saida")">@TiposMovimentacao.Rotulo(x.Tipo)</span></td>
+                                <td class="text-end">@x.Movimentacoes</td>
+                                <td class="text-end">@Formatos.Moeda(x.ValorTotal)</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <p class="small text-muted">O resumo considera só movimentações processadas; canceladas aparecem na lista quando incluídas, mas não somam.</p>
+
+        @if (r.Truncado)
+        {
+            <div class="alert alert-warning py-2 small no-print">
+                Exibindo @r.Linhas.Count de @r.TotalEncontrado movimentações. O PDF e o CSV trazem até @Estoque.Web.Services.RelatorioService.LimiteExportacao.ToString("N0") linhas; para ver todas na tela, reduza o período.
+            </div>
+        }
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0 tabela-relatorio">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Data</th><th>Número</th>
+                        @if (f.Consolidado) { <th>Unidade</th> }
+                        <th>Tipo</th><th>Item</th><th class="text-end">Qtd.</th><th class="text-end">Valor unit.</th><th class="text-end">Valor total</th>
+                        <th>Fornecedor / beneficiário</th><th>Responsável</th><th>Status</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @if (r.Linhas.Count == 0)
+                    {
+                        <tr><td colspan="11" class="text-center text-muted py-4">Nenhuma movimentação encontrada para o filtro.</td></tr>
+                    }
+                    @foreach (var l in r.Linhas)
+                    {
+                        <tr class="@(l.Cancelada ? "text-muted" : "")">
+                            <td class="text-nowrap">@Formatos.Data(l.Data)</td>
+                            <td class="small text-nowrap">@l.Numero</td>
+                            @if (f.Consolidado) { <td>@l.Unidade</td> }
+                            <td><span class="badge @(l.EhEntrada ? "badge-entrada" : "badge-saida")">@TiposMovimentacao.Rotulo(l.Tipo)</span></td>
+                            <td>@l.Item <span class="text-muted small">@l.CodigoItem</span></td>
+                            <td class="text-end text-nowrap">@(l.EhEntrada ? "+" : "−")@l.Quantidade @l.UnidadeMedida</td>
+                            <td class="text-end text-nowrap">@Formatos.Moeda(l.ValorUnitario)</td>
+                            <td class="text-end text-nowrap">@Formatos.Moeda(l.ValorTotal)</td>
+                            <td class="small">@l.OrigemDestino</td>
+                            <td class="small">@l.Responsavel</td>
+                            <td><span class="badge @(l.Cancelada ? "text-bg-secondary" : "text-bg-light border")">@l.Status</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

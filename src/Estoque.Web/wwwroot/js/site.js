@@ -75,7 +75,7 @@ function iniciarBuscaItem(box) {
             cod.textContent = it.codigoInterno;
             esq.append(nome, cod);
             b.append(esq);
-            if (modo !== "filtro") {
+            if (modo === "entrada" || modo === "saida") {
                 const saldo = document.createElement("small");
                 saldo.className = it.saldo > 0 ? "text-nowrap" : "text-nowrap text-danger";
                 saldo.textContent = "saldo " + it.saldo + " " + it.unidadeMedida;
@@ -94,7 +94,7 @@ function iniciarBuscaItem(box) {
     async function buscar() {
         const minha = ++seq;
         try {
-            const resp = await fetch(box.dataset.url + "?q=" + encodeURIComponent(txt.value.trim()),
+            const resp = await fetch(box.dataset.url + "?q=" + encodeURIComponent(txt.value.trim()) + (modo === "relatorio" ? "&inativos=true" : ""),
                 { credentials: "same-origin", headers: { Accept: "application/json" } });
             if (!resp.ok || !(resp.headers.get("content-type") || "").includes("json")) throw new Error("resposta inesperada");
             const dados = await resp.json();
@@ -180,6 +180,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const el = document.getElementById(abrir);
         if (el) bootstrap.Modal.getOrCreateInstance(el).show();
     }
+
+    // Relatórios: imprimir usa o CSS @media print (esconde menu e filtros)
+    document.querySelectorAll("[data-imprimir]").forEach(b => b.addEventListener("click", () => window.print()));
 
     // Modal de cancelamento: recebe id e número da movimentação do botão que o abriu
     const modalCancelar = document.getElementById("modalCancelar");

@@ -250,7 +250,7 @@ public class EstoqueIndexViewModel
 public record BuscaItemModel(
     string IdCampo,              // id do input oculto com o ItemId (ex.: Entrada_ItemId)
     string NomeCampo,            // name enviado no POST (ex.: Entrada.ItemId)
-    string Modo,                 // "entrada", "saida" ou "filtro"
+    string Modo,                 // "entrada", "saida", "filtro" ou "relatorio" (inclui itens inativos)
     Item? Selecionado = null,
     bool Obrigatorio = true,
     string? IdUnidadeAlvo = null,    // input somente leitura que recebe a unidade do item escolhido
@@ -261,4 +261,82 @@ public class UnidadeOpcao
     public int Id { get; init; }
     public string Nome { get; init; } = "";
     public string Tipo { get; init; } = "";
+}
+
+/// <summary>Filtros do relatório de movimentações (E5.2). Tipo aceita um tipo específico ou os grupos "entradas"/"saidas".</summary>
+public class FiltroRelatorio
+{
+    public const string TodasEntradas = "entradas";
+    public const string TodasSaidas = "saidas";
+
+    public DateOnly? De { get; set; }
+    public DateOnly? Ate { get; set; }
+    public string? Tipo { get; set; }
+    public int? CategoriaId { get; set; }
+    public int? ItemId { get; set; }
+    public int? ParceiroId { get; set; }
+    public bool IncluirCanceladas { get; set; }
+    /// <summary>Todas as unidades do usuário (só admin; o controller ignora para os demais papéis).</summary>
+    public bool Consolidado { get; set; }
+}
+
+public sealed record LinhaRelatorio(
+    string Numero,
+    DateOnly Data,
+    string Tipo,
+    string Unidade,
+    string Item,
+    string CodigoItem,
+    string Categoria,
+    int Quantidade,
+    string UnidadeMedida,
+    decimal ValorUnitario,
+    decimal ValorTotal,
+    string? Parceiro,
+    string? Beneficiario,
+    string Responsavel,
+    string Status,
+    string? Observacoes)
+{
+    public bool EhEntrada => TiposMovimentacao.EhEntrada(Tipo);
+    public bool Cancelada => Status == StatusMovimentacao.Cancelada;
+    /// <summary>Entrada: fornecedor/doador; saída: beneficiário (doação) ou o tipo de uso.</summary>
+    public string OrigemDestino => EhEntrada ? Parceiro ?? "Anônimo" : Beneficiario ?? "—";
+}
+
+/// <summary>Totais por tipo, só de movimentações processadas (canceladas não contam).</summary>
+public sealed record ResumoTipo(string Tipo, int Movimentacoes, decimal ValorTotal)
+{
+    public bool EhEntrada => TiposMovimentacao.EhEntrada(Tipo);
+}
+
+public class RelatorioMovimentacoes
+{
+    public required FiltroRelatorio Filtro { get; init; }
+    public required string NomeOrganizacao { get; init; }
+    /// <summary>Nome da unidade atual, ou "Todas as unidades" no consolidado.</summary>
+    public required string Abrangencia { get; init; }
+    public required IReadOnlyList<LinhaRelatorio> Linhas { get; init; }
+    public required IReadOnlyList<ResumoTipo> Resumo { get; init; }
+    /// <summary>Total de linhas que atendem ao filtro (pode ser maior que Linhas.Count quando há limite).</summary>
+    public int TotalEncontrado { get; init; }
+    public bool Truncado => TotalEncontrado > Linhas.Count;
+    public DateTime GeradoEmUtc { get; init; }
+    public string GeradoPor { get; init; } = "";
+    /// <summary>Descrição legível dos filtros aplicados, para cabeçalho de PDF/CSV.</summary>
+    public IReadOnlyList<string> FiltrosDescritos { get; init; } = [];
+
+    public decimal TotalEntradas => Resumo.Where(r => r.EhEntrada).Sum(r => r.ValorTotal);
+    public decimal TotalSaidas => Resumo.Where(r => !r.EhEntrada).Sum(r => r.ValorTotal);
+}
+
+public class RelatorioIndexViewModel
+{
+    public required FiltroRelatorio Filtro { get; init; }
+    public RelatorioMovimentacoes? Relatorio { get; init; }
+    public string? Erro { get; init; }
+    public bool PodeConsolidar { get; init; }
+    public Item? ItemFiltro { get; init; }
+    public IReadOnlyList<Categoria> Categorias { get; init; } = [];
+    public IReadOnlyList<Parceiro> Parceiros { get; init; } = [];
 }

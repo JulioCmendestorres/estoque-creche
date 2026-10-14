@@ -47,13 +47,14 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
     /// ativos do tenant, com o saldo da unidade atual. O filtro de tenant vem do DbContext.
     /// </summary>
     [HttpGet]
-    public async Task<IActionResult> Buscar(string? q)
+    public async Task<IActionResult> Buscar(string? q, bool inativos = false)
     {
         var texto = (q ?? "").Trim();
         if (texto.Length > 100) texto = texto[..100];
         var termos = texto.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(5).ToList();
 
-        var query = db.Itens.Where(i => i.Ativo);
+        // Relatórios também procuram itens inativados (que ainda têm histórico)
+        var query = inativos ? db.Itens : db.Itens.Where(i => i.Ativo);
         foreach (var termo in termos)
             query = query.Where(i => i.Nome.Contains(termo) || i.CodigoInterno.Contains(termo));
 
