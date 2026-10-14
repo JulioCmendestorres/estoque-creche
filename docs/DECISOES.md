@@ -32,3 +32,4 @@ Registro das escolhas feitas durante a implementação do MVP que não estavam f
 | D-25 | **Removida a página "Sobre a ONG"** (menu, rota e view). Diverge do PLANO.md (menu da seção 1 e E5.5). | Pedido do responsável. |
 | D-26 | **`.gitignore`** passou a ignorar `credenciais*` e `senhas*`: um `credenciais.txt` apareceu na pasta do projeto e entraria no próximo `git add -A`. | Evitar vazamento acidental. |
 | D-27 | **Scripts com bit executável no Git** (`instalar.sh`, `smoke.sh`, `server-bootstrap.sh`). Antes foram commitados sem ele e dariam "Permission denied" num clone Linux. | Correção. |
+| D-28 | **Repositório público** para facilitar o clone por HTTPS (sem chave SSH nem token). Antes de tornar público, o histórico foi conferido: não há senhas reais nem arquivos de segredo; só os placeholders `TroqueEsta-Senha-...` do antigo `.env.example`. A partir daqui, nenhum `.env`, `appsettings.Local.json` ou senha pode ser commitado. | Pedido do responsável. |

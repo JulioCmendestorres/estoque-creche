@@ -11,13 +11,13 @@ alertas de estoque mínimo, dashboard e auditoria. Escopo e roadmap: [`PLANO.md`
 Servidor Linux **x86-64** com Docker e 4 GB de RAM.
 
 ```bash
-git clone git@github.com:JulioCmendestorres/estoque-creche.git
+git clone https://github.com/JulioCmendestorres/estoque-creche.git
 cd estoque-creche
 ./scripts/instalar.sh
 ```
 
 O script pergunta apenas o **domínio** e a **porta**; senhas e administrador inicial são gerados e mostrados no final.
-Para atualizar ou mudar domínio/porta, rode o script de novo. Detalhes e solução de problemas: [`docs/DEPLOY.md`](docs/DEPLOY.md).
+Para atualizar ou mudar domínio/porta, rode o script de novo. Guia completo, incluindo a instalação do Docker: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Desenvolvimento (sem Docker, SQL Server em `localhost`)
 
