@@ -129,6 +129,8 @@ public class EstoqueUnidade : IUnidadeEntity
     public int QuantidadeMinima { get; set; }
     public decimal ValorTotalEstoque { get; set; }
     public bool AbaixoDoMinimo { get; set; }
+    /// <summary>Falso = item desativado só nesta unidade (o catálogo continua compartilhado).</summary>
+    public bool Ativo { get; set; } = true;
     public DateTime? AtualizadoEm { get; set; }
 }
 

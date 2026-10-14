@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Estoque.Web.Controllers;
 
 /// <summary>Categorias (tipo do item).</summary>
-public class CategoriasController(EstoqueDbContext db) : Controller
+public class CategoriasController(EstoqueDbContext db, TravasCadastroService travas) : Controller
 {
     public async Task<IActionResult> Index() =>
         View(await db.Categorias.OrderByDescending(c => c.Ativo).ThenBy(c => c.Nome).ToListAsync());
@@ -55,8 +55,14 @@ public class CategoriasController(EstoqueDbContext db) : Controller
     {
         var c = await db.Categorias.FirstOrDefaultAsync(x => x.Id == id);
         if (c is null) return NotFound();
+        if (!ativo && await travas.MotivoParaInativarCategoriaAsync(id) is { } motivo)
+        {
+            TempData["Erro"] = motivo;
+            return RedirectToAction(nameof(Index));
+        }
         c.Ativo = ativo;
         await db.SaveChangesAsync();
+        TempData["Sucesso"] = $"Categoria \"{c.Nome}\" {(ativo ? "reativada" : "inativada")}.";
         return RedirectToAction(nameof(Index));
     }
 

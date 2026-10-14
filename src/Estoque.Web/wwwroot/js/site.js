@@ -94,7 +94,7 @@ function iniciarBuscaItem(box) {
     async function buscar() {
         const minha = ++seq;
         try {
-            const resp = await fetch(box.dataset.url + "?q=" + encodeURIComponent(txt.value.trim()) + (modo === "relatorio" ? "&inativos=true" : ""),
+            const resp = await fetch(box.dataset.url + "?q=" + encodeURIComponent(txt.value.trim()) + (modo === "relatorio" || modo === "filtro" ? "&inativos=true" : ""),
                 { credentials: "same-origin", headers: { Accept: "application/json" } });
             if (!resp.ok || !(resp.headers.get("content-type") || "").includes("json")) throw new Error("resposta inesperada");
             const dados = await resp.json();

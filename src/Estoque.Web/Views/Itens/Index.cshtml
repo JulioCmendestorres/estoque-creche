@@ -2,6 +2,8 @@
 @{
     ViewData["Title"] = "Itens";
     var podeEditar = Acesso.Tem(Permissoes.CadastroItens);
+    var podeUnidade = Acesso.Tem(Permissoes.EstoqueItensUnidade);
+    var unidade = Acesso.UnidadeNome;
 }
 <div class="page-header">
     <h1>Itens</h1>
@@ -43,13 +45,13 @@
             <thead class="table-light">
             <tr>
                 <th>Código</th><th>Nome</th><th>Categoria</th><th>Unid.</th>
-                <th class="text-end">Preço est.</th><th class="text-end">Saldo</th><th class="text-end">Mínimo</th><th></th>
+                <th class="text-end">Preço est.</th><th class="text-end">Saldo</th><th class="text-end">Mínimo</th><th>Nesta unidade</th><th></th>
             </tr>
             </thead>
             <tbody>
             @if (Model.Itens.Count == 0)
             {
-                <tr><td colspan="8" class="text-center text-muted py-4">Nenhum item encontrado.</td></tr>
+                <tr><td colspan="9" class="text-center text-muted py-4">Nenhum item encontrado.</td></tr>
             }
             @foreach (var l in Model.Itens)
             {
@@ -57,7 +59,7 @@
                     <td class="small text-nowrap">@l.Item.CodigoInterno</td>
                     <td>
                         @l.Item.Nome
-                        @if (!l.Item.Ativo) { <span class="badge text-bg-secondary ms-1">inativo</span> }
+                        @if (!l.Item.Ativo) { <span class="badge text-bg-secondary ms-1" title="Inativo no catálogo: vale para todas as unidades">inativo em todas</span> }
                     </td>
                     <td>@l.Item.Categoria?.Nome</td>
                     <td>@l.Item.UnidadeMedida</td>
@@ -67,14 +69,34 @@
                         @if (l.Alerta) { <i class="bi bi-exclamation-triangle-fill" title="Abaixo do mínimo"></i> }
                     </td>
                     <td class="text-end">@l.Minimo</td>
+                    <td class="text-nowrap">
+                        @if (!l.Item.Ativo)
+                        {
+                            <span class="text-muted small">—</span>
+                        }
+                        else
+                        {
+                            <span class="badge @(l.AtivoNaUnidade ? "text-bg-success" : "text-bg-secondary")">@(l.AtivoNaUnidade ? "Ativo" : "Desativado")</span>
+                            @if (podeUnidade)
+                            {
+                                <form asp-action="AlterarStatusUnidade" asp-route-id="@l.Item.Id" method="post" class="d-inline"
+                                      data-confirmar="@(l.AtivoNaUnidade ? $"Desativar \"{l.Item.Nome}\" só em {unidade}? As outras unidades continuam usando o item." : "")">
+                                    <input type="hidden" name="ativo" value="@(!l.AtivoNaUnidade ? "true" : "false")" />
+                                    <button class="btn btn-sm btn-link p-0 ms-1 align-baseline" title="@(l.AtivoNaUnidade ? $"Desativar só em {unidade}" : $"Reativar em {unidade}")">
+                                        @(l.AtivoNaUnidade ? "desativar" : "reativar")
+                                    </button>
+                                </form>
+                            }
+                        }
+                    </td>
                     <td class="text-end text-nowrap">
                         @if (podeEditar)
                         {
                             <a asp-action="Editar" asp-route-id="@l.Item.Id" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
                             <form asp-action="AlterarStatus" asp-route-id="@l.Item.Id" method="post" class="d-inline"
-                                  onsubmit="return confirm('@(l.Item.Ativo ? "Inativar" : "Reativar") o item?');">
+                                  data-confirmar="@(l.Item.Ativo ? $"Inativar \"{l.Item.Nome}\" em TODAS as unidades? Só é possível com saldo zerado em todas." : $"Reativar \"{l.Item.Nome}\" no catálogo?")">
                                 <input type="hidden" name="ativo" value="@(!l.Item.Ativo ? "true" : "false")" />
-                                <button class="btn btn-sm @(l.Item.Ativo ? "btn-outline-danger" : "btn-outline-success")" title="@(l.Item.Ativo ? "Inativar" : "Reativar")">
+                                <button class="btn btn-sm @(l.Item.Ativo ? "btn-outline-danger" : "btn-outline-success")" title="@(l.Item.Ativo ? "Inativar em todas as unidades" : "Reativar no catálogo")">
                                     <i class="bi @(l.Item.Ativo ? "bi-trash" : "bi-arrow-counterclockwise")"></i>
                                 </button>
                             </form>
@@ -86,4 +108,7 @@
         </table>
     </div>
 </div>
-<p class="text-muted small mt-2">Saldo e mínimo referem-se à unidade selecionada no cabeçalho.</p>
+<p class="text-muted small mt-2">
+    Saldo, mínimo e "Nesta unidade" referem-se a <strong>@unidade</strong>. "Desativar" tira o item só desta unidade;
+    a lixeira inativa o item no catálogo de todas as unidades (exige saldo zerado em todas).
+</p>

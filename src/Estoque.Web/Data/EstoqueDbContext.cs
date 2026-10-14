@@ -161,6 +161,7 @@ public class EstoqueDbContext(DbContextOptions<EstoqueDbContext> options, ITenan
             e.Property(x => x.ValorTotalEstoque).HasColumnName("valor_total_estoque").HasPrecision(12, 2);
             e.Property(x => x.AbaixoDoMinimo).HasColumnName("abaixo_do_minimo")
                 .HasComputedColumnSql("CAST(CASE WHEN quantidade_atual <= quantidade_minima THEN 1 ELSE 0 END AS BIT)", stored: true);
+            e.Property(x => x.Ativo).HasColumnName("ativo").HasDefaultValue(true);
             e.Property(x => x.AtualizadoEm).HasColumnName("atualizado_em").ValueGeneratedOnAddOrUpdate();
             e.HasOne(x => x.Item).WithMany().HasForeignKey(x => x.ItemId);
             e.HasQueryFilter(x => x.TenantId == TenantAtual && x.UnidadeId == UnidadeAtual);
@@ -190,6 +191,7 @@ public class EstoqueDbContext(DbContextOptions<EstoqueDbContext> options, ITenan
                 t.HasTrigger("trg_mov_validacao");
                 t.HasTrigger("trg_mov_estoque");
                 t.HasTrigger("trg_mov_sem_delete");
+                t.HasTrigger("trg_mov_item_ativo_unidade");
                 t.HasTrigger("trg_movimentacoes_auditoria");
             });
             e.Property(x => x.Id).HasColumnName("id");

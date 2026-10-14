@@ -62,7 +62,7 @@ public class EstoqueController(EstoqueDbContext db, MovimentacaoService moviment
     private async Task<EstoqueIndexViewModel> MontarAsync(string aba, string? busca, FiltroMovimentacoes filtro,
         EntradaInput? entrada = null, SaidaInput? saida = null, string? modal = null)
     {
-        var saldosQ = db.Estoques.Include(e => e.Item).ThenInclude(i => i!.Categoria).Where(e => e.Item!.Ativo);
+        var saldosQ = db.Estoques.Include(e => e.Item).ThenInclude(i => i!.Categoria).Where(e => e.Item!.Ativo && e.Ativo);
         if (!string.IsNullOrWhiteSpace(busca))
             saldosQ = saldosQ.Where(e => e.Item!.Nome.Contains(busca.Trim()) || e.Item.CodigoInterno.Contains(busca.Trim()));
         var saldos = await saldosQ.OrderBy(e => e.Item!.Nome).ToListAsync();

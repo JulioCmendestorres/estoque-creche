@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Estoque.Web.Controllers;
 
 /// <summary>RF01 — catálogo de itens do tenant; quantidade mínima é por unidade.</summary>
-public class ItensController(EstoqueDbContext db, TenantContext tenant) : Controller
+public class ItensController(EstoqueDbContext db, TenantContext tenant, TravasCadastroService travas) : Controller
 {
     public async Task<IActionResult> Index(string? busca, int? categoriaId, bool inativos = false)
     {
@@ -36,7 +36,7 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
             MostrarInativos = inativos,
             Categorias = await db.Categorias.Where(c => c.Ativo).OrderBy(c => c.Nome).ToListAsync(),
             Itens = itens.Select(i => saldos.TryGetValue(i.Id, out var s)
-                ? new ItemLinha { Item = i, Saldo = s.QuantidadeAtual, Minimo = s.QuantidadeMinima, Alerta = s.AbaixoDoMinimo }
+                ? new ItemLinha { Item = i, Saldo = s.QuantidadeAtual, Minimo = s.QuantidadeMinima, Alerta = s.AbaixoDoMinimo, AtivoNaUnidade = s.Ativo }
                 : new ItemLinha { Item = i }).ToList(),
         });
     }
@@ -44,7 +44,8 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
     /// <summary>
     /// Busca incremental para os formulários de movimentação: todos os termos digitados precisam
     /// aparecer no nome ou no código (sem distinguir acento/maiúscula). Devolve no máximo 20 itens
-    /// ativos do tenant, com o saldo da unidade atual. O filtro de tenant vem do DbContext.
+    /// ativos do tenant (e não desativados na unidade atual), com o saldo da unidade atual. O filtro de
+    /// tenant/unidade vem do DbContext. inativos=true (relatórios e filtros) traz também os inativos.
     /// </summary>
     [HttpGet]
     public async Task<IActionResult> Buscar(string? q, bool inativos = false)
@@ -54,7 +55,8 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
         var termos = texto.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Take(5).ToList();
 
         // Relatórios também procuram itens inativados (que ainda têm histórico)
-        var query = inativos ? db.Itens : db.Itens.Where(i => i.Ativo);
+        var query = inativos ? db.Itens
+            : db.Itens.Where(i => i.Ativo && !db.Estoques.Any(e => e.ItemId == i.Id && !e.Ativo));
         foreach (var termo in termos)
             query = query.Where(i => i.Nome.Contains(termo) || i.CodigoInterno.Contains(termo));
 
@@ -142,10 +144,47 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
     {
         var item = await db.Itens.FirstOrDefaultAsync(i => i.Id == id);
         if (item is null) return NotFound();
+        // D-38: o catálogo é das duas unidades; com saldo em qualquer uma, não inativa
+        if (!ativo && await travas.MotivoParaInativarItemAsync(id) is { } motivo)
+        {
+            TempData["Erro"] = motivo;
+            return RedirectToAction(nameof(Index));
+        }
         item.Ativo = ativo;
         await db.SaveChangesAsync();
-        TempData["Sucesso"] = $"Item \"{item.Nome}\" {(ativo ? "reativado" : "inativado")}.";
+        TempData["Sucesso"] = $"Item \"{item.Nome}\" {(ativo ? "reativado" : "inativado em todas as unidades")}.";
         return RedirectToAction(nameof(Index), new { inativos = !ativo });
+    }
+
+    /// <summary>
+    /// Ativa/desativa o item só na unidade atual (a outra unidade não é afetada). Desativar exige saldo zerado.
+    /// </summary>
+    [Permissao(Permissoes.EstoqueItensUnidade), HttpPost]
+    public async Task<IActionResult> AlterarStatusUnidade(int id, bool ativo)
+    {
+        var item = await db.Itens.FirstOrDefaultAsync(i => i.Id == id);
+        if (item is null) return NotFound();
+        if (!ativo && await travas.MotivoParaDesativarNaUnidadeAsync(id) is { } motivo)
+        {
+            TempData["Erro"] = motivo;
+            return RedirectToAction(nameof(Index));
+        }
+
+        var est = await db.Estoques.FirstOrDefaultAsync(e => e.ItemId == id);
+        if (est is null)
+        {
+            if (ativo) return RedirectToAction(nameof(Index)); // sem linha de estoque = já ativo
+            db.Estoques.Add(new EstoqueUnidade { ItemId = id, Ativo = false });
+        }
+        else
+        {
+            est.Ativo = ativo;
+        }
+        await db.SaveChangesAsync();
+        TempData["Sucesso"] = ativo
+            ? $"\"{item.Nome}\" voltou a aparecer em {db.Tenant.UnidadeNome}."
+            : $"\"{item.Nome}\" desativado só em {db.Tenant.UnidadeNome}; as outras unidades não mudam.";
+        return RedirectToAction(nameof(Index));
     }
 
     private static void Aplicar(Item item, ItemInput input)

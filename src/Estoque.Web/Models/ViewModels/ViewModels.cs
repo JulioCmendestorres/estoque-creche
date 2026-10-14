@@ -91,6 +91,8 @@ public class ItemLinha
     public int Saldo { get; init; }
     public int Minimo { get; init; }
     public bool Alerta { get; init; }
+    /// <summary>Ativo na unidade atual (sem linha de estoque = ativo).</summary>
+    public bool AtivoNaUnidade { get; init; } = true;
 }
 
 public class ItensIndexViewModel

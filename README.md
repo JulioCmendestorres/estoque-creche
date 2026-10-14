@@ -45,7 +45,7 @@ dotnet test
 ## Estrutura
 
 ```
-db/migrations/      V001 schema · V002 triggers · V003 manutenção · V004 só CNPJ + unidades por tenant · V005 perfis e master
+db/migrations/      V001 schema · V002 triggers · V003 manutenção · V004 só CNPJ + unidades por tenant · V005 perfis e master · V006 item ativo por unidade
 docs/               DEPLOY.md · DECISOES.md · referencia/Cria_Banco.sql (original)
 src/Estoque.Web/    Controllers · Data (DbContext, Migrator, Seed, Interceptors) · Services · Views
 tests/Estoque.Tests regras do banco (T1.4), migrator (T1.3), isolamento de tenant (T2.2), relatórios (E5.2), usuários e perfis (E5.1)

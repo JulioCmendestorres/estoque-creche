@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Estoque.Web.Controllers;
 
 /// <summary>Unidades de medida cadastráveis por tenant (kg, pacote, lata, ...). Inativar em vez de excluir.</summary>
-public class UnidadesMedidaController(EstoqueDbContext db) : Controller
+public class UnidadesMedidaController(EstoqueDbContext db, TravasCadastroService travas) : Controller
 {
     public async Task<IActionResult> Index()
     {
@@ -69,6 +69,11 @@ public class UnidadesMedidaController(EstoqueDbContext db) : Controller
     {
         var u = await db.UnidadesMedida.FirstOrDefaultAsync(x => x.Id == id);
         if (u is null) return NotFound();
+        if (!ativo && await travas.MotivoParaInativarUnidadeMedidaAsync(u.Codigo) is { } motivo)
+        {
+            TempData["Erro"] = motivo;
+            return RedirectToAction(nameof(Index));
+        }
         u.Ativo = ativo;
         await db.SaveChangesAsync();
         TempData["Sucesso"] = $"Unidade \"{u.Descricao}\" {(ativo ? "reativada" : "inativada")}.";

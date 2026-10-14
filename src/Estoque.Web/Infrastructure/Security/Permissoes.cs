@@ -9,6 +9,7 @@ public static class Permissoes
 {
     public const string EstoqueMovimentar = "estoque.movimentar";
     public const string EstoqueCancelar = "estoque.cancelar";
+    public const string EstoqueItensUnidade = "estoque.itens_unidade";
     public const string CadastroItens = "cadastros.itens";
     public const string CadastroCategorias = "cadastros.categorias";
     public const string CadastroUnidadesMedida = "cadastros.unidades_medida";
@@ -24,6 +25,7 @@ public static class Permissoes
     [
         new(EstoqueMovimentar, "Estoque", "Registrar entradas e saídas", "Nova Entrada e Nova Saída na própria unidade.", false),
         new(EstoqueCancelar, "Estoque", "Cancelar movimentações", "Estorna uma movimentação processada da própria unidade.", false),
+        new(EstoqueItensUnidade, "Estoque", "Ativar e desativar itens na unidade", "Tira um item (com saldo zerado) da lista só desta unidade; a outra unidade não é afetada.", false),
         new(CadastroItens, "Cadastros compartilhados", "Itens", "Criar, editar e inativar itens do catálogo.", true),
         new(CadastroCategorias, "Cadastros compartilhados", "Categorias", "Criar, editar e inativar categorias.", true),
         new(CadastroUnidadesMedida, "Cadastros compartilhados", "Unidades de medida", "Criar, editar e inativar unidades de medida.", true),

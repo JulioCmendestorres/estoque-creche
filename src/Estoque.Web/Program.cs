@@ -114,6 +114,7 @@ static void ConfigurarServicos(WebApplicationBuilder builder)
     s.AddScoped<MovimentacaoService>();
     s.AddScoped<DashboardService>();
     s.AddScoped<RelatorioService>();
+    s.AddScoped<TravasCadastroService>();
     s.AddSingleton<IPasswordHasher<Usuario>, PasswordHasher<Usuario>>();
 
     var keysPath = cfg["DataProtection:KeysPath"];
