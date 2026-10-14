@@ -14,7 +14,8 @@ public class IsolamentoTenantTests(BancoFixture db)
     private EstoqueDbContext Contexto(Cenario s, int? unidade = null)
     {
         var tenant = new TenantContext();
-        tenant.Definir(s.Tenant, unidade ?? s.Matriz, s.Usuario, Papeis.Admin, "127.0.0.1");
+        tenant.Definir(s.Tenant, unidade ?? s.Matriz, s.Usuario, "127.0.0.1");
+        tenant.DefinirAcesso(master: true, [], null, null);
         var opt = new DbContextOptionsBuilder<EstoqueDbContext>()
             .UseSqlServer(db.Cs)
             .AddInterceptors(new SessionContextInterceptor())

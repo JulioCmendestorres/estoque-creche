@@ -44,7 +44,14 @@ public class Usuario : ITenantEntity
     public string Nome { get; set; } = "";
     public string Email { get; set; } = "";
     public string SenhaHash { get; set; } = "";
-    public string Papel { get; set; } = Papeis.Operacional;
+    /// <summary>Nulo só para o master, que tem todas as permissões.</summary>
+    public int? PerfilId { get; set; }
+    public Perfil? Perfil { get; set; }
+    /// <summary>Unidade em que o usuário está cadastrado. Para o master, a unidade aberta ao entrar.</summary>
+    public int UnidadeId { get; set; }
+    public Unidade? Unidade { get; set; }
+    /// <summary>Um por tenant (índice único filtrado): transita entre unidades e gerencia usuários e perfis.</summary>
+    public bool Master { get; set; }
     public bool Ativo { get; set; } = true;
     public bool TrocarSenha { get; set; }
     public DateTime? UltimoLoginEm { get; set; }
@@ -54,19 +61,24 @@ public class Usuario : ITenantEntity
     public DateTime? AtualizadoEm { get; set; }
 }
 
-public static class Papeis
+/// <summary>Perfil de usuário cadastrável por tenant; as permissões vêm do catálogo em <c>Permissoes</c>.</summary>
+public class Perfil : ITenantEntity
 {
-    public const string Admin = "admin";
-    public const string Operacional = "operacional";
-    public const string Visualizador = "visualizador";
+    public int Id { get; set; }
+    public int TenantId { get; set; }
+    public string Nome { get; set; } = "";
+    public string? Descricao { get; set; }
+    public bool Ativo { get; set; } = true;
+    public DateTime CriadoEm { get; set; }
+    public DateTime? AtualizadoEm { get; set; }
+    public List<PerfilPermissao> Permissoes { get; set; } = [];
 }
 
-public class UsuarioUnidade : ITenantEntity
+public class PerfilPermissao : ITenantEntity
 {
     public int TenantId { get; set; }
-    public int UsuarioId { get; set; }
-    public int UnidadeId { get; set; }
-    public Unidade? Unidade { get; set; }
+    public int PerfilId { get; set; }
+    public string Permissao { get; set; } = "";
 }
 
 /// <summary>Unidade de medida cadastrável por tenant. O código (sigla) não muda depois de criado: itens o referenciam.</summary>

@@ -19,7 +19,8 @@ public class RelatorioTests(BancoFixture db)
     private EstoqueDbContext Contexto(Cenario s, int unidade)
     {
         var tenant = new TenantContext();
-        tenant.Definir(s.Tenant, unidade, s.Usuario, Papeis.Admin, "127.0.0.1");
+        tenant.Definir(s.Tenant, unidade, s.Usuario, "127.0.0.1");
+        tenant.DefinirAcesso(master: true, [], null, null);
         var opt = new DbContextOptionsBuilder<EstoqueDbContext>()
             .UseSqlServer(db.Cs)
             .AddInterceptors(new SessionContextInterceptor())
@@ -91,22 +92,6 @@ public class RelatorioTests(BancoFixture db)
         Assert.Equal("Todas as unidades", consolidado.Abrangencia);
         Assert.Equal([2, 3], consolidado.Linhas.Select(l => l.Quantidade).Order());
         Assert.Equal(["Filial", "Matriz"], consolidado.Linhas.Select(l => l.Unidade).Order());
-    }
-
-    [Fact]
-    public async Task Consolidado_respeita_unidades_vinculadas_ao_usuario()
-    {
-        Cenario s;
-        await using (var c = await db.AbrirAsync())
-        {
-            s = await NovoTenant(c);
-            await Mov(c, s, "doacao_recebida", 2, 1m, unidade: s.Matriz);
-            await Mov(c, s, "doacao_recebida", 3, 1m, unidade: s.Filial);
-            await Exec(c, "DELETE FROM usuarios_unidades WHERE usuario_id = @u AND unidade_id = @f", ("@u", s.Usuario), ("@f", s.Filial));
-        }
-
-        var r = await Gerar(s, s.Matriz, Filtro(f => f.Consolidado = true));
-        Assert.Equal(2, r.Linhas.Single().Quantidade);
     }
 
     [Fact]

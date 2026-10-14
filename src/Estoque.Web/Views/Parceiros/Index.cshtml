@@ -1,7 +1,7 @@
 @model List<Parceiro>
 @{
     ViewData["Title"] = "Fornecedores";
-    var podeEditar = (await Autorizacao.AuthorizeAsync(User, Policies.PodeEditar)).Succeeded;
+    var podeEditar = Acesso.Tem(Permissoes.CadastroFornecedores);
     var inativos = ViewBag.Inativos is true;
 }
 <div class="page-header">

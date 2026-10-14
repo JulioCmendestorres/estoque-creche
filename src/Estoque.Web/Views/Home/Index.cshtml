@@ -1,7 +1,7 @@
 @model DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
-    var unidade = User.FindFirst(ClaimsApp.UnidadeNome)?.Value;
+    var unidade = Acesso.UnidadeNome;
 }
 <div class="page-header">
     <h1>Dashboard</h1>

@@ -7,17 +7,22 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Estoque.Web.ViewComponents;
 
-/// <summary>Seletor Matriz/Filial do cabeçalho: só as unidades do usuário (usuarios_unidades).</summary>
+/// <summary>
+/// Unidade no cabeçalho: o master escolhe entre todas as unidades ativas; os demais
+/// só veem a unidade em que estão cadastrados.
+/// </summary>
 public class SeletorUnidadeViewComponent(EstoqueDbContext db, ITenantContext tenant) : ViewComponent
 {
     public async Task<IViewComponentResult> InvokeAsync()
     {
-        var unidades = await db.UsuariosUnidades
-            .Where(uu => uu.UsuarioId == tenant.UsuarioId && uu.Unidade!.Ativo)
-            .Select(uu => new UnidadeOpcao { Id = uu.Unidade!.Id, Nome = uu.Unidade.Nome, Tipo = uu.Unidade.Tipo })
-            .OrderBy(u => u.Tipo == "matriz" ? 0 : 1).ThenBy(u => u.Nome)
-            .ToListAsync();
+        var unidades = tenant.Master
+            ? await db.Unidades.Where(u => u.Ativo)
+                .Select(u => new UnidadeOpcao { Id = u.Id, Nome = u.Nome, Tipo = u.Tipo })
+                .OrderBy(u => u.Tipo == "matriz" ? 0 : 1).ThenBy(u => u.Nome)
+                .ToListAsync()
+            : [];
         ViewBag.Atual = tenant.UnidadeId;
+        ViewBag.NomeAtual = tenant.UnidadeNome;
         return View(unidades);
     }
 }

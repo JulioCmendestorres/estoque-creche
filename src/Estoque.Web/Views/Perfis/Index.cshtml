@@ -1,0 +1,51 @@
+@model List<PerfilLinha>
+@{
+    ViewData["Title"] = "Perfis de acesso";
+}
+<div class="page-header">
+    <h1>Perfis de acesso</h1>
+    <a asp-action="Criar" class="btn btn-primary ms-auto"><i class="bi bi-plus-lg"></i> Novo perfil</a>
+</div>
+<p class="text-muted small" style="max-width: 860px">
+    O perfil define o que cada pessoa pode fazer. Todos os usuários consultam o estoque, as movimentações e o painel da própria unidade.
+    Permissões marcadas com <span class="badge badge-global">matriz e filial</span> mexem em dados das duas unidades: dê só a pessoas de confiança.
+</p>
+<div class="row g-3">
+    @foreach (var l in Model)
+    {
+        var p = l.Perfil;
+        <div class="col-md-6 col-xl-4">
+            <div class="card h-100 @(p.Ativo ? "" : "opacity-75")">
+                <div class="card-body">
+                    <div class="d-flex align-items-start gap-2 mb-1">
+                        <h2 class="h6 mb-0">@p.Nome</h2>
+                        @if (!p.Ativo) { <span class="badge text-bg-secondary">Inativo</span> }
+                        <span class="badge text-bg-light border ms-auto" title="Usuários ativos com este perfil"><i class="bi bi-people"></i> @l.Usuarios</span>
+                    </div>
+                    <p class="small text-muted">@p.Descricao</p>
+                    @if (p.Permissoes.Count == 0)
+                    {
+                        <p class="small text-muted fst-italic mb-0">Só consulta.</p>
+                    }
+                    <ul class="list-unstyled small mb-0">
+                        @foreach (var d in Permissoes.Todas.Where(d => p.Permissoes.Any(x => x.Permissao == d.Codigo)))
+                        {
+                            <li>
+                                <i class="bi bi-check2 text-success"></i> @d.Nome
+                                @if (d.Global) { <span class="badge badge-global">matriz e filial</span> }
+                            </li>
+                        }
+                    </ul>
+                </div>
+                <div class="card-footer bg-transparent d-flex gap-2 justify-content-end">
+                    <a asp-action="Editar" asp-route-id="@p.Id" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i> Editar</a>
+                    <form asp-action="AlterarStatus" asp-route-id="@p.Id" method="post"
+                          data-confirmar="@(p.Ativo && l.Usuarios > 0 ? $"{l.Usuarios} usuário(s) usam este perfil e passarão a só consultar. Inativar?" : "")">
+                        <input type="hidden" name="ativo" value="@(!p.Ativo ? "true" : "false")" />
+                        <button class="btn btn-sm @(p.Ativo ? "btn-outline-danger" : "btn-outline-success")">@(p.Ativo ? "Inativar" : "Reativar")</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+</div>

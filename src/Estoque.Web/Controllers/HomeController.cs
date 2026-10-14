@@ -31,22 +31,19 @@ public class HomeController(DashboardService dashboard) : Controller
 public class UnidadeController(EstoqueDbContext db, TenantContext tenant, AuditoriaService auditoria) : Controller
 {
     /// <summary>
-    /// Troca a unidade atual. A unidade é validada contra usuarios_unidades + tenant
-    /// (filtros globais); outra unidade/tenant é recusada.
+    /// Troca a unidade atual. Só o master transita entre unidades; a unidade precisa estar ativa
+    /// e ser do tenant (filtro global). Os demais usuários ficam na unidade do cadastro.
     /// </summary>
-    [HttpPost]
+    [SomenteMaster, HttpPost]
     public async Task<IActionResult> Alternar(int unidadeId, string? returnUrl)
     {
-        var unidade = await db.UsuariosUnidades
-            .Where(uu => uu.UsuarioId == tenant.UsuarioId && uu.UnidadeId == unidadeId && uu.Unidade!.Ativo)
-            .Select(uu => uu.Unidade!)
-            .FirstOrDefaultAsync();
+        var unidade = await db.Unidades.FirstOrDefaultAsync(u => u.Id == unidadeId && u.Ativo);
         if (unidade is null) return Forbid();
 
         var usuario = await db.Usuarios.FirstAsync(u => u.Id == tenant.UsuarioId);
         var anterior = tenant.UnidadeId;
-        await Autenticacao.EntrarAsync(HttpContext, Autenticacao.MontarPrincipal(usuario, unidade, usuario.TrocarSenha));
-        tenant.Definir(tenant.TenantId, unidade.Id, tenant.UsuarioId, tenant.Papel, tenant.Ip);
+        await Autenticacao.EntrarAsync(HttpContext, Autenticacao.MontarPrincipal(usuario, unidade.Id, usuario.TrocarSenha));
+        tenant.Definir(tenant.TenantId, unidade.Id, tenant.UsuarioId, tenant.Ip);
         await auditoria.RegistrarAsync("ALTERNAR_UNIDADE", tenant.TenantId, unidade.Id, tenant.UsuarioId,
             new { de = anterior, para = unidade.Id });
 

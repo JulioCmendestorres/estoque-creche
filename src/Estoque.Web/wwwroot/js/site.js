@@ -181,6 +181,21 @@ document.addEventListener("DOMContentLoaded", () => {
         if (el) bootstrap.Modal.getOrCreateInstance(el).show();
     }
 
+    // Formulários com data-confirmar="mensagem" pedem confirmação antes de enviar (vazio = não pergunta)
+    document.querySelectorAll("form[data-confirmar]").forEach(f => f.addEventListener("submit", ev => {
+        const msg = f.dataset.confirmar;
+        if (msg && !window.confirm(msg)) ev.preventDefault();
+    }));
+
+    // Botão de copiar: data-copiar="id do elemento com o texto"
+    document.querySelectorAll("[data-copiar]").forEach(b => b.addEventListener("click", async () => {
+        const alvo = document.getElementById(b.dataset.copiar);
+        try {
+            await navigator.clipboard.writeText(alvo.textContent.trim());
+            b.innerHTML = '<i class="bi bi-check2"></i>';
+        } catch { /* sem permissão de área de transferência: o texto continua visível */ }
+    }));
+
     // Relatórios: imprimir usa o CSS @media print (esconde menu e filtros)
     document.querySelectorAll("[data-imprimir]").forEach(b => b.addEventListener("click", () => window.print()));
 

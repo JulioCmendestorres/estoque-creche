@@ -50,7 +50,7 @@ public class ContaController(
         {
             if (usuario is not null)
             {
-                tenant.Definir(usuario.TenantId, null, null, null, tenant.Ip);
+                tenant.Definir(usuario.TenantId, null, null, tenant.Ip);
                 usuario.TentativasFalhasLogin++;
                 await db.SaveChangesAsync();
             }
@@ -60,15 +60,15 @@ public class ContaController(
             return View(input);
         }
 
-        tenant.Definir(usuario.TenantId, null, usuario.Id, usuario.Papel, tenant.Ip);
-        var unidade = await db.UsuariosUnidades
-            .Where(uu => uu.UsuarioId == usuario.Id && uu.Unidade!.Ativo)
-            .Select(uu => uu.Unidade!)
-            .OrderBy(u => u.Tipo == TiposUnidade.Matriz ? 0 : 1).ThenBy(u => u.Nome)
-            .FirstOrDefaultAsync();
+        tenant.Definir(usuario.TenantId, null, usuario.Id, tenant.Ip);
+        // Usuário comum entra sempre na unidade do cadastro; o master, nela ou (se inativa) na primeira ativa
+        var unidade = await db.Unidades.FirstOrDefaultAsync(u => u.Id == usuario.UnidadeId && u.Ativo);
+        if (unidade is null && usuario.Master)
+            unidade = await db.Unidades.Where(u => u.Ativo)
+                .OrderBy(u => u.Tipo == TiposUnidade.Matriz ? 0 : 1).ThenBy(u => u.Nome).FirstOrDefaultAsync();
         if (unidade is null)
         {
-            ModelState.AddModelError(string.Empty, "Seu usuário não tem acesso a nenhuma unidade. Procure o administrador.");
+            ModelState.AddModelError(string.Empty, "A unidade do seu cadastro está inativa. Procure o responsável pelo sistema.");
             return View(input);
         }
 
@@ -76,10 +76,10 @@ public class ContaController(
             usuario.SenhaHash = hasher.HashPassword(usuario, input.Senha);
         usuario.UltimoLoginEm = DateTime.UtcNow;
         usuario.TentativasFalhasLogin = 0;
-        tenant.Definir(usuario.TenantId, unidade.Id, usuario.Id, usuario.Papel, tenant.Ip);
+        tenant.Definir(usuario.TenantId, unidade.Id, usuario.Id, tenant.Ip);
         await db.SaveChangesAsync();
 
-        await Autenticacao.EntrarAsync(HttpContext, Autenticacao.MontarPrincipal(usuario, unidade, usuario.TrocarSenha));
+        await Autenticacao.EntrarAsync(HttpContext, Autenticacao.MontarPrincipal(usuario, unidade.Id, usuario.TrocarSenha));
         await auditoria.RegistrarAsync("LOGIN", usuario.TenantId, unidade.Id, usuario.Id);
 
         if (usuario.TrocarSenha) return RedirectToAction(nameof(AlterarSenha));
@@ -121,8 +121,7 @@ public class ContaController(
         await db.SaveChangesAsync();
         await auditoria.RegistrarAsync("ALTERAR_SENHA", tenant.TenantId, tenant.UnidadeId, tenant.UsuarioId);
 
-        var unidade = await db.Unidades.FirstAsync(u => u.Id == tenant.UnidadeId);
-        await Autenticacao.EntrarAsync(HttpContext, Autenticacao.MontarPrincipal(usuario, unidade, trocarSenha: false));
+        await Autenticacao.EntrarAsync(HttpContext, Autenticacao.MontarPrincipal(usuario, tenant.UnidadeId!.Value, trocarSenha: false));
         TempData["Sucesso"] = "Senha alterada com sucesso.";
         return RedirectToAction("Index", "Home");
     }

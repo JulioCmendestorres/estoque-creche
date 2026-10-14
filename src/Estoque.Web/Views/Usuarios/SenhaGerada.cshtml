@@ -1,0 +1,23 @@
+@model SenhaGeradaViewModel
+@{
+    ViewData["Title"] = Model.Novo ? "Usuário criado" : "Senha redefinida";
+}
+<div class="page-header"><h1>@ViewData["Title"]</h1></div>
+<div class="card" style="max-width: 560px">
+    <div class="card-body">
+        <p class="mb-3">Entregue estes dados a <strong>@Model.Nome</strong>. No primeiro acesso, o sistema pede para criar uma senha nova.</p>
+        <dl class="row mb-3">
+            <dt class="col-sm-4">Login</dt>
+            <dd class="col-sm-8"><code>@Model.Email</code></dd>
+            <dt class="col-sm-4">Senha temporária</dt>
+            <dd class="col-sm-8 d-flex align-items-center gap-2">
+                <code class="fs-5" id="senhaTemporaria">@Model.Senha</code>
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-copiar="senhaTemporaria" title="Copiar"><i class="bi bi-clipboard"></i></button>
+            </dd>
+        </dl>
+        <div class="alert alert-warning small py-2">
+            <i class="bi bi-exclamation-triangle"></i> Esta senha aparece <strong>só agora</strong>. Se ela se perder, use "Redefinir senha" na lista de usuários.
+        </div>
+        <a asp-action="Index" class="btn btn-primary">Voltar para usuários</a>
+    </div>
+</div>

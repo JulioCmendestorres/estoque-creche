@@ -1,13 +1,24 @@
 @model IReadOnlyList<UnidadeOpcao>
 @{ var atual = ViewBag.Atual as int?; }
-<form asp-controller="Unidade" asp-action="Alternar" method="post" class="d-flex align-items-center gap-2 seletor-unidade">
-    <input type="hidden" name="returnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" />
-    <i class="bi bi-building text-muted"></i>
-    <label for="unidadeId" class="visually-hidden">Unidade</label>
-    <select id="unidadeId" name="unidadeId" class="form-select form-select-sm" onchange="this.form.submit()" disabled="@(Model.Count <= 1)">
-        @foreach (var u in Model)
-        {
-            <option value="@u.Id" selected="@(u.Id == atual)">@u.Nome (@(u.Tipo == "matriz" ? "Matriz" : "Filial"))</option>
-        }
-    </select>
-</form>
+@if (Model.Count == 0)
+{
+    @* Usuário comum: só a unidade em que está cadastrado *@
+    <span class="d-flex align-items-center gap-2 small" title="Unidade em que você está cadastrado">
+        <i class="bi bi-building text-muted"></i>
+        <span class="badge text-bg-light border fw-normal">@ViewBag.NomeAtual</span>
+    </span>
+}
+else
+{
+    <form asp-controller="Unidade" asp-action="Alternar" method="post" class="d-flex align-items-center gap-2 seletor-unidade">
+        <input type="hidden" name="returnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" />
+        <i class="bi bi-building text-muted"></i>
+        <label for="unidadeId" class="visually-hidden">Unidade</label>
+        <select id="unidadeId" name="unidadeId" class="form-select form-select-sm" onchange="this.form.submit()" disabled="@(Model.Count <= 1)">
+            @foreach (var u in Model)
+            {
+                <option value="@u.Id" selected="@(u.Id == atual)">@u.Nome (@(u.Tipo == "matriz" ? "Matriz" : "Filial"))</option>
+            }
+        </select>
+    </form>
+}

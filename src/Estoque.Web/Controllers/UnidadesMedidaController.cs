@@ -24,10 +24,10 @@ public class UnidadesMedidaController(EstoqueDbContext db) : Controller
         }).ToList());
     }
 
-    [Authorize(Policy = Policies.PodeEditar)]
+    [Permissao(Permissoes.CadastroUnidadesMedida)]
     public IActionResult Criar() => View("Form", new UnidadeMedidaInput());
 
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.CadastroUnidadesMedida), HttpPost]
     public async Task<IActionResult> Criar(UnidadeMedidaInput input)
     {
         if (!ModelState.IsValid) return View("Form", input);
@@ -41,7 +41,7 @@ public class UnidadesMedidaController(EstoqueDbContext db) : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    [Authorize(Policy = Policies.PodeEditar)]
+    [Permissao(Permissoes.CadastroUnidadesMedida)]
     public async Task<IActionResult> Editar(int id)
     {
         var u = await db.UnidadesMedida.FirstOrDefaultAsync(x => x.Id == id);
@@ -49,7 +49,7 @@ public class UnidadesMedidaController(EstoqueDbContext db) : Controller
     }
 
     /// <summary>Só o nome muda: a sigla é a chave que os itens guardam.</summary>
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.CadastroUnidadesMedida), HttpPost]
     public async Task<IActionResult> Editar(int id, UnidadeMedidaInput input)
     {
         var u = await db.UnidadesMedida.FirstOrDefaultAsync(x => x.Id == id);
@@ -64,7 +64,7 @@ public class UnidadesMedidaController(EstoqueDbContext db) : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.CadastroUnidadesMedida), HttpPost]
     public async Task<IActionResult> AlterarStatus(int id, bool ativo)
     {
         var u = await db.UnidadesMedida.FirstOrDefaultAsync(x => x.Id == id);

@@ -145,7 +145,8 @@ Pressione Enter nas duas perguntas para manter a configuração atual.
 | O script termina com "a instalação falhou" | Rode `docker compose logs migrator web` e envie a saída para quem mantém o sistema. |
 | Domínio não abre | Confira o DNS e as portas 80/443. Veja `docker compose logs proxy-https`. |
 | "já existe um banco desta instalação, mas o .env não foi encontrado" | Não apague nada. Procure o arquivo `.env` original (ele guarda as senhas). |
-| Esqueceu a senha do administrador | Ainda não há recuperação de senha nesta versão. Fale com quem mantém o sistema. |
+| Alguém esqueceu a senha | O administrador (master) entra em **Usuários** e usa "Redefinir senha". |
+| O administrador (master) esqueceu a própria senha | Ainda não há recuperação para o master. Fale com quem mantém o sistema. |
 
 Para ver todos os containers:
 

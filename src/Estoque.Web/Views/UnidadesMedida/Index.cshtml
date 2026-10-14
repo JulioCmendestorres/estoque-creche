@@ -1,7 +1,7 @@
 @model List<UnidadeMedidaLinha>
 @{
     ViewData["Title"] = "Unidades de medida";
-    var podeEditar = (await Autorizacao.AuthorizeAsync(User, Policies.PodeEditar)).Succeeded;
+    var podeEditar = Acesso.Tem(Permissoes.CadastroUnidadesMedida);
 }
 <div class="page-header">
     <h1>Unidades de medida</h1>

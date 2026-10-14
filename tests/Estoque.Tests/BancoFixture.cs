@@ -17,7 +17,9 @@ public sealed class BancoFixture : IAsyncLifetime
 
     public string NomeBanco { get; } = $"EstoqueTeste_{Guid.NewGuid():N}"[..21];
     public string Cs => new SqlConnectionStringBuilder(AdminCs) { InitialCatalog = NomeBanco }.ConnectionString;
-    public static string PastaMigracoes => DatabaseMigrator.LocalizarPastaMigracoes(null);
+    // ESTOQUE_TEST_MIGRACOES: para rodar com --artifacts-path (saída fora do repositório, ex.: app aberto no Visual Studio)
+    public static string PastaMigracoes =>
+        DatabaseMigrator.LocalizarPastaMigracoes(Environment.GetEnvironmentVariable("ESTOQUE_TEST_MIGRACOES"));
 
     public async Task InitializeAsync()
     {
@@ -72,17 +74,15 @@ public static class Sql
 
     public sealed record Cenario(int Tenant, int Matriz, int Filial, int Usuario, int Categoria, int Item);
 
-    /// <summary>Tenant novo com matriz, filial, usuário, categoria e um item.</summary>
+    /// <summary>Tenant novo com matriz, filial, usuário master, categoria e um item.</summary>
     public static async Task<Cenario> NovoTenant(SqlConnection c)
     {
         var sufixo = Guid.NewGuid().ToString("N")[..8];
         var t = await Id(c, "INSERT INTO tenants (nome) VALUES (@n)", ("@n", "T " + sufixo));
         var m = await Id(c, "INSERT INTO unidades (tenant_id, nome, tipo) VALUES (@t, 'Matriz', 'matriz')", ("@t", t));
         var f = await Id(c, "INSERT INTO unidades (tenant_id, nome, tipo) VALUES (@t, 'Filial', 'filial')", ("@t", t));
-        var u = await Id(c, "INSERT INTO usuarios (tenant_id, nome, email, senha, papel) VALUES (@t, 'U', @e, 'AQAAAAhashFicticio', 'admin')",
-            ("@t", t), ("@e", $"u{sufixo}@teste.local"));
-        await Exec(c, "INSERT INTO usuarios_unidades (tenant_id, usuario_id, unidade_id) VALUES (@t, @u, @m), (@t, @u, @f)",
-            ("@t", t), ("@u", u), ("@m", m), ("@f", f));
+        var u = await Id(c, "INSERT INTO usuarios (tenant_id, nome, email, senha, unidade_id, master) VALUES (@t, 'U', @e, 'AQAAAAhashFicticio', @m, 1)",
+            ("@t", t), ("@e", $"u{sufixo}@teste.local"), ("@m", m));
         await Exec(c, "INSERT INTO unidades_medida (tenant_id, codigo, descricao) VALUES (@t, 'pacote', 'Pacote'), (@t, 'kg', 'Quilograma')",
             ("@t", t));
         var cat = await Id(c, "INSERT INTO categorias_itens (tenant_id, nome) VALUES (@t, 'Alimento')", ("@t", t));

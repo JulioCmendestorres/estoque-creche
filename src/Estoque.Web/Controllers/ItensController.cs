@@ -74,10 +74,10 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
         return Json(itens);
     }
 
-    [Authorize(Policy = Policies.PodeEditar)]
+    [Permissao(Permissoes.CadastroItens)]
     public async Task<IActionResult> Criar() => View("Form", await MontarForm(new ItemInput()));
 
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.CadastroItens), HttpPost]
     public async Task<IActionResult> Criar(ItemInput input)
     {
         await ValidarReferencias(input);
@@ -96,7 +96,7 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
         return RedirectToAction(nameof(Index));
     }
 
-    [Authorize(Policy = Policies.PodeEditar)]
+    [Permissao(Permissoes.CadastroItens)]
     public async Task<IActionResult> Editar(int id)
     {
         var item = await db.Itens.FirstOrDefaultAsync(i => i.Id == id);
@@ -116,7 +116,7 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
         }));
     }
 
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.CadastroItens), HttpPost]
     public async Task<IActionResult> Editar(int id, ItemInput input)
     {
         var item = await db.Itens.FirstOrDefaultAsync(i => i.Id == id);
@@ -137,7 +137,7 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
     }
 
     /// <summary>Exclusão = inativação (o histórico de movimentações é preservado).</summary>
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.CadastroItens), HttpPost]
     public async Task<IActionResult> AlterarStatus(int id, bool ativo)
     {
         var item = await db.Itens.FirstOrDefaultAsync(i => i.Id == id);
@@ -215,6 +215,6 @@ public class ItensController(EstoqueDbContext db, TenantContext tenant) : Contro
         // mantém a unidade atual do item mesmo que tenha sido inativada depois
         UnidadesMedida = await db.UnidadesMedida.Where(u => u.Ativo || u.Codigo == input.UnidadeMedida)
             .OrderBy(u => u.Descricao).ToListAsync(),
-        NomeUnidade = User.FindFirst(ClaimsApp.UnidadeNome)?.Value ?? "",
+        NomeUnidade = db.Tenant.UnidadeNome ?? "",
     };
 }

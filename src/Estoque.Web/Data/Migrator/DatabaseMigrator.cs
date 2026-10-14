@@ -223,7 +223,6 @@ public sealed partial class DatabaseMigrator(MigratorOptions opt, ILogger logger
                 DENY INSERT, UPDATE, DELETE ON dbo.schema_migrations     TO estoque_app;
                 DENY INSERT, UPDATE, DELETE ON dbo.manutencao_log        TO estoque_app;
                 DENY INSERT, UPDATE, DELETE ON dbo.saude_banco_historico TO estoque_app;
-                DENY INSERT, UPDATE, DELETE ON dbo.papeis_usuario        TO estoque_app;
                 DENY INSERT, UPDATE, DELETE ON dbo.tenants               TO estoque_app;
                 """, ct);
             logger.LogInformation("Login {Login} configurado.", LoginApp);

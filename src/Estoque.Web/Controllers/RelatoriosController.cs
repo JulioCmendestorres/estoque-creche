@@ -1,5 +1,6 @@
 using Estoque.Web.Data;
 using Estoque.Web.Infrastructure;
+using Estoque.Web.Infrastructure.Security;
 using Estoque.Web.Models.Entities;
 using Estoque.Web.Models.ViewModels;
 using Estoque.Web.Services;
@@ -8,7 +9,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Estoque.Web.Controllers;
 
-/// <summary>RF07 / E5.2: relatório de movimentações em tela, impressão, PDF e CSV. Todos os papéis consultam; consolidado só admin.</summary>
+/// <summary>RF07 / E5.2: relatório de movimentações em tela, impressão, PDF e CSV. Exige a permissão de ver relatórios; consolidado só com a de visão consolidada (ou master).</summary>
+[Permissao(Permissoes.RelatoriosVer)]
 public class RelatoriosController(EstoqueDbContext db, RelatorioService relatorios, AuditoriaService auditoria) : Controller
 {
     public async Task<IActionResult> Index([FromQuery] FiltroRelatorio filtro)
@@ -18,6 +20,7 @@ public class RelatoriosController(EstoqueDbContext db, RelatorioService relatori
         return View(await MontarAsync(filtro, relatorio, erro));
     }
 
+    [Permissao(Permissoes.RelatoriosExportar)]
     public async Task<IActionResult> Exportar(string formato, [FromQuery] FiltroRelatorio filtro)
     {
         formato = (formato ?? "").ToLowerInvariant();
@@ -51,13 +54,13 @@ public class RelatoriosController(EstoqueDbContext db, RelatorioService relatori
         return File(bytes, formato == "pdf" ? "application/pdf" : "text/csv; charset=utf-8", nome);
     }
 
-    /// <summary>Período padrão: mês corrente. Consolidado é ignorado para quem não é admin.</summary>
+    /// <summary>Período padrão: mês corrente. Consolidado é ignorado sem a permissão de visão consolidada.</summary>
     private void Normalizar(FiltroRelatorio f)
     {
         var hoje = Tempo.Hoje;
         f.De ??= new DateOnly(hoje.Year, hoje.Month, 1);
         f.Ate ??= hoje;
-        f.Consolidado = f.Consolidado && User.IsInRole(Papeis.Admin);
+        f.Consolidado = f.Consolidado && db.Tenant.Tem(Permissoes.VisaoConsolidada);
     }
 
     private static object RotaDoFiltro(FiltroRelatorio f) => new
@@ -77,7 +80,7 @@ public class RelatoriosController(EstoqueDbContext db, RelatorioService relatori
         Filtro = filtro,
         Relatorio = r,
         Erro = erro,
-        PodeConsolidar = User.IsInRole(Papeis.Admin),
+        PodeConsolidar = db.Tenant.Tem(Permissoes.VisaoConsolidada),
         ItemFiltro = filtro.ItemId is > 0 ? await db.Itens.FirstOrDefaultAsync(i => i.Id == filtro.ItemId) : null,
         Categorias = await db.Categorias.OrderBy(c => c.Nome).ToListAsync(),
         Parceiros = await db.Parceiros.OrderBy(p => p.Nome).ToListAsync(),

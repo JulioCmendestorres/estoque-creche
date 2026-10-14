@@ -36,8 +36,16 @@
                 <a class="nav-link @Ativo("Categorias")" asp-controller="Categorias" asp-action="Index"><i class="bi bi-collection"></i> Categorias</a>
                 <a class="nav-link @Ativo("UnidadesMedida")" asp-controller="UnidadesMedida" asp-action="Index"><i class="bi bi-rulers"></i> Unidades de medida</a>
                 <a class="nav-link @Ativo("Parceiros")" asp-controller="Parceiros" asp-action="Index"><i class="bi bi-truck"></i> Fornecedores</a>
-                <a class="nav-link @Ativo("Relatorios")" asp-controller="Relatorios" asp-action="Index"><i class="bi bi-file-earmark-bar-graph"></i> Relatórios</a>
-                <span class="nav-link disabled" title="Disponível na versão completa"><i class="bi bi-people"></i> Usuários <span class="badge text-bg-secondary ms-auto">em breve</span></span>
+                @if (Acesso.Tem(Permissoes.RelatoriosVer))
+                {
+                    <a class="nav-link @Ativo("Relatorios")" asp-controller="Relatorios" asp-action="Index"><i class="bi bi-file-earmark-bar-graph"></i> Relatórios</a>
+                }
+                @if (Acesso.Master)
+                {
+                    <div class="sidebar-secao">Administração</div>
+                    <a class="nav-link @Ativo("Usuarios")" asp-controller="Usuarios" asp-action="Index"><i class="bi bi-people"></i> Usuários</a>
+                    <a class="nav-link @Ativo("Perfis")" asp-controller="Perfis" asp-action="Index"><i class="bi bi-shield-lock"></i> Perfis de acesso</a>
+                }
             </nav>
         }
     </aside>
@@ -61,7 +69,7 @@
                         <span class="avatar">@Estoque.Web.Controllers.ContaController.Iniciais(User)</span>
                         <span class="d-none d-md-inline text-start lh-sm">
                             <span class="d-block small fw-semibold">@User.Identity?.Name</span>
-                            <span class="d-block text-muted" style="font-size:.75rem">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                            <span class="d-block text-muted" style="font-size:.75rem">@Acesso.PerfilNome</span>
                         </span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">

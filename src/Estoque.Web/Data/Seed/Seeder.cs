@@ -1,4 +1,5 @@
 using System.Data;
+using Estoque.Web.Infrastructure.Security;
 using Estoque.Web.Models.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
@@ -15,9 +16,9 @@ public sealed record SeedOptions
 
 /// <summary>
 /// T3.1: roda ao final do --migrate, só se ainda não existir tenant.
-/// Sempre: tenant, Matriz, Filial, admin (trocar_senha = 1) e categorias.
+/// Sempre: tenant, Matriz, Filial, perfis padrão, admin master (trocar_senha = 1) e categorias.
 /// Com SEED_DEMO_DATA=true: itens da planilha (Apêndice A), mínimos, parceiros,
-/// um usuário por papel e algumas movimentações.
+/// um usuário por perfil (Operacional na Matriz, Visualizador na Filial) e algumas movimentações.
 /// </summary>
 public sealed class Seeder(string dbConnectionString, SeedOptions opt, ILogger logger)
 {
@@ -32,6 +33,17 @@ public sealed class Seeder(string dbConnectionString, SeedOptions opt, ILogger l
     [
         ("unidade", "Unidade avulsa"), ("kg", "Quilograma"), ("litro", "Litro"), ("pacote", "Pacote"),
         ("caixa", "Caixa"), ("lata", "Lata"), ("sache", "Sachê"),
+    ];
+
+    // Mesma lista da V005 (bancos que já existiam ganharam estes perfis pela migração)
+    private static readonly (string Nome, string Descricao, string[] Permissoes)[] PerfisPadrao =
+    [
+        ("Administrador", "Pessoa de confiança: tudo, inclusive cadastros compartilhados e visão consolidada",
+            Permissoes.Todas.Select(p => p.Codigo).ToArray()),
+        ("Operacional", "Registra entradas e saídas e consulta relatórios da própria unidade",
+            [Permissoes.EstoqueMovimentar, Permissoes.RelatoriosVer, Permissoes.RelatoriosExportar]),
+        ("Visualizador", "Apenas consulta estoque, movimentações e relatórios da própria unidade",
+            [Permissoes.RelatoriosVer]),
     ];
 
     private static readonly string[] Categorias =["Alimento", "Roupa", "Brinquedo", "Higiene e limpeza", "Outros"];
@@ -99,11 +111,23 @@ public sealed class Seeder(string dbConnectionString, SeedOptions opt, ILogger l
                     "INSERT INTO unidades_medida (tenant_id, codigo, descricao) VALUES (@t, @c, @d);", ct,
                     P("@t", tenantId), P("@c", codigo), P("@d", descricao));
 
+            var perfis = new Dictionary<string, int>();
+            foreach (var (nome, descricao, permissoes) in PerfisPadrao)
+            {
+                var perfilId = await Inserir(conn, tx, "INSERT INTO perfis (tenant_id, nome, descricao) VALUES (@t, @n, @d);", ct,
+                    P("@t", tenantId), P("@n", nome), P("@d", descricao));
+                foreach (var permissao in permissoes)
+                    await Escalar(conn, tx, "INSERT INTO perfis_permissoes (tenant_id, perfil_id, permissao) VALUES (@t, @p, @c);", ct,
+                        P("@t", tenantId), P("@p", perfilId), P("@c", permissao));
+                perfis[nome] = perfilId;
+            }
+
+            // O administrador inicial é o master: único que transita entre unidades e gerencia usuários e perfis
             var adminId = await CriarUsuario(conn, tx, tenantId, "Administrador", opt.AdminEmail!,
-                hasher.HashPassword(null!, opt.AdminPassword!), Papeis.Admin, trocarSenha: true, [matrizId, filialId], ct);
+                hasher.HashPassword(null!, opt.AdminPassword!), perfilId: null, unidadeId: matrizId, master: true, trocarSenha: true, ct);
 
             if (opt.DemoData)
-                await SemearDemo(conn, tx, tenantId, matrizId, filialId, adminId, categorias["Alimento"], hasher, ct);
+                await SemearDemo(conn, tx, tenantId, matrizId, filialId, adminId, categorias["Alimento"], perfis, hasher, ct);
 
             await tx.CommitAsync(ct);
             logger.LogInformation("Seed concluído: tenant {Tenant}, Matriz e Filial, admin {Email}{Demo}.",
@@ -117,15 +141,15 @@ public sealed class Seeder(string dbConnectionString, SeedOptions opt, ILogger l
     }
 
     private async Task SemearDemo(SqlConnection conn, SqlTransaction tx, int tenantId, int matrizId, int filialId,
-        int adminId, int categoriaAlimento, PasswordHasher<Usuario> hasher, CancellationToken ct)
+        int adminId, int categoriaAlimento, Dictionary<string, int> perfis, PasswordHasher<Usuario> hasher, CancellationToken ct)
     {
-        // Usuários de exemplo, um por papel; mesma senha do admin (somente ambiente de teste)
+        // Usuários de exemplo, um por perfil; mesma senha do admin (somente ambiente de teste)
         var hashDemo = hasher.HashPassword(null!, opt.AdminPassword!);
         var dominio = opt.AdminEmail!.Split('@')[1];
         var operadorId = await CriarUsuario(conn, tx, tenantId, "Operador Demo", $"operacional@{dominio}", hashDemo,
-            Papeis.Operacional, trocarSenha: false, [matrizId, filialId], ct);
+            perfis["Operacional"], matrizId, master: false, trocarSenha: false, ct);
         await CriarUsuario(conn, tx, tenantId, "Visualizador Demo", $"visualizador@{dominio}", hashDemo,
-            Papeis.Visualizador, trocarSenha: false, [matrizId], ct);
+            perfis["Visualizador"], filialId, master: false, trocarSenha: false, ct);
 
         var mercadoId = await Inserir(conn, tx, """
             INSERT INTO parceiros (tenant_id, nome, tipo, cnpj, telefone) VALUES (@t, N'Mercado Bom Preço (fictício)', 'empresa', '11222333000181', '(11) 4000-0000');
@@ -176,19 +200,13 @@ public sealed class Seeder(string dbConnectionString, SeedOptions opt, ILogger l
         await Mov(filialId, TiposMovimentacao.DoacaoRecebida, itens[3], 3, ItensDemo[3].Preco, 6);
     }
 
-    private static async Task<int> CriarUsuario(SqlConnection conn, SqlTransaction tx, int tenantId, string nome, string email,
-        string hash, string papel, bool trocarSenha, int[] unidades, CancellationToken ct)
-    {
-        var id = await Inserir(conn, tx, """
-            INSERT INTO usuarios (tenant_id, nome, email, senha, papel, trocar_senha) VALUES (@t, @nome, @email, @senha, @papel, @trocar);
+    private static Task<int> CriarUsuario(SqlConnection conn, SqlTransaction tx, int tenantId, string nome, string email,
+        string hash, int? perfilId, int unidadeId, bool master, bool trocarSenha, CancellationToken ct) =>
+        Inserir(conn, tx, """
+            INSERT INTO usuarios (tenant_id, nome, email, senha, perfil_id, unidade_id, master, trocar_senha)
+            VALUES (@t, @nome, @email, @senha, @perfil, @unidade, @master, @trocar);
             """, ct, P("@t", tenantId), P("@nome", nome), P("@email", email.Trim().ToLowerInvariant()),
-            P("@senha", hash), P("@papel", papel), P("@trocar", trocarSenha));
-        foreach (var u in unidades)
-            await Inserir(conn, tx, """
-                INSERT INTO usuarios_unidades (tenant_id, usuario_id, unidade_id) VALUES (@t, @usr, @u);
-                """, ct, P("@t", tenantId), P("@usr", id), P("@u", u));
-        return id;
-    }
+            P("@senha", hash), P("@perfil", perfilId), P("@unidade", unidadeId), P("@master", master), P("@trocar", trocarSenha));
 
     private static SqlParameter P(string nome, object? valor) => valor switch
     {

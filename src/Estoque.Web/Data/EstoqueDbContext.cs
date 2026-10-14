@@ -20,7 +20,8 @@ public class EstoqueDbContext(DbContextOptions<EstoqueDbContext> options, ITenan
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Unidade> Unidades => Set<Unidade>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
-    public DbSet<UsuarioUnidade> UsuariosUnidades => Set<UsuarioUnidade>();
+    public DbSet<Perfil> Perfis => Set<Perfil>();
+    public DbSet<PerfilPermissao> PerfisPermissoes => Set<PerfilPermissao>();
     public DbSet<UnidadeMedida> UnidadesMedida => Set<UnidadeMedida>();
     public DbSet<Categoria> Categorias => Set<Categoria>();
     public DbSet<Item> Itens => Set<Item>();
@@ -62,7 +63,9 @@ public class EstoqueDbContext(DbContextOptions<EstoqueDbContext> options, ITenan
             e.Property(x => x.Nome).HasColumnName("nome");
             e.Property(x => x.Email).HasColumnName("email");
             e.Property(x => x.SenhaHash).HasColumnName("senha");
-            e.Property(x => x.Papel).HasColumnName("papel");
+            e.Property(x => x.PerfilId).HasColumnName("perfil_id");
+            e.Property(x => x.UnidadeId).HasColumnName("unidade_id");
+            e.Property(x => x.Master).HasColumnName("master");
             e.Property(x => x.Ativo).HasColumnName("ativo");
             e.Property(x => x.TrocarSenha).HasColumnName("trocar_senha");
             e.Property(x => x.UltimoLoginEm).HasColumnName("ultimo_login_em");
@@ -70,17 +73,32 @@ public class EstoqueDbContext(DbContextOptions<EstoqueDbContext> options, ITenan
             e.Property(x => x.BloqueadoAte).HasColumnName("bloqueado_ate");
             e.Property(x => x.CriadoEm).HasColumnName("criado_em").HasDefaultValueSql("SYSUTCDATETIME()");
             e.Property(x => x.AtualizadoEm).HasColumnName("atualizado_em").ValueGeneratedOnAddOrUpdate();
+            e.HasOne(x => x.Perfil).WithMany().HasForeignKey(x => x.PerfilId);
+            e.HasOne(x => x.Unidade).WithMany().HasForeignKey(x => x.UnidadeId);
             e.HasQueryFilter(x => x.TenantId == TenantAtual);
         });
 
-        mb.Entity<UsuarioUnidade>(e =>
+        mb.Entity<Perfil>(e =>
         {
-            e.ToTable("usuarios_unidades");
-            e.HasKey(x => new { x.UsuarioId, x.UnidadeId });
+            e.ToTable("perfis", t => t.HasTrigger("trg_perfis_auditoria"));
+            e.Property(x => x.Id).HasColumnName("id");
             e.Property(x => x.TenantId).HasColumnName("tenant_id");
-            e.Property(x => x.UsuarioId).HasColumnName("usuario_id");
-            e.Property(x => x.UnidadeId).HasColumnName("unidade_id");
-            e.HasOne(x => x.Unidade).WithMany().HasForeignKey(x => x.UnidadeId);
+            e.Property(x => x.Nome).HasColumnName("nome");
+            e.Property(x => x.Descricao).HasColumnName("descricao");
+            e.Property(x => x.Ativo).HasColumnName("ativo");
+            e.Property(x => x.CriadoEm).HasColumnName("criado_em").HasDefaultValueSql("SYSUTCDATETIME()");
+            e.Property(x => x.AtualizadoEm).HasColumnName("atualizado_em").ValueGeneratedOnAddOrUpdate();
+            e.HasMany(x => x.Permissoes).WithOne().HasForeignKey(x => x.PerfilId);
+            e.HasQueryFilter(x => x.TenantId == TenantAtual);
+        });
+
+        mb.Entity<PerfilPermissao>(e =>
+        {
+            e.ToTable("perfis_permissoes", t => t.HasTrigger("trg_perfis_permissoes_auditoria"));
+            e.HasKey(x => new { x.PerfilId, x.Permissao });
+            e.Property(x => x.TenantId).HasColumnName("tenant_id");
+            e.Property(x => x.PerfilId).HasColumnName("perfil_id");
+            e.Property(x => x.Permissao).HasColumnName("permissao");
             e.HasQueryFilter(x => x.TenantId == TenantAtual);
         });
 

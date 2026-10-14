@@ -16,10 +16,10 @@ public class CategoriasController(EstoqueDbContext db) : Controller
     public async Task<IActionResult> Index() =>
         View(await db.Categorias.OrderByDescending(c => c.Ativo).ThenBy(c => c.Nome).ToListAsync());
 
-    [Authorize(Policy = Policies.PodeEditar)]
+    [Permissao(Permissoes.CadastroCategorias)]
     public IActionResult Criar() => View("Form", new CategoriaInput());
 
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.CadastroCategorias), HttpPost]
     public async Task<IActionResult> Criar(CategoriaInput input)
     {
         if (!ModelState.IsValid) return View("Form", input);
@@ -29,14 +29,14 @@ public class CategoriasController(EstoqueDbContext db) : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    [Authorize(Policy = Policies.PodeEditar)]
+    [Permissao(Permissoes.CadastroCategorias)]
     public async Task<IActionResult> Editar(int id)
     {
         var c = await db.Categorias.FirstOrDefaultAsync(x => x.Id == id);
         return c is null ? NotFound() : View("Form", new CategoriaInput { Id = c.Id, Nome = c.Nome, Descricao = c.Descricao });
     }
 
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.CadastroCategorias), HttpPost]
     public async Task<IActionResult> Editar(int id, CategoriaInput input)
     {
         var c = await db.Categorias.FirstOrDefaultAsync(x => x.Id == id);
@@ -50,7 +50,7 @@ public class CategoriasController(EstoqueDbContext db) : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.CadastroCategorias), HttpPost]
     public async Task<IActionResult> AlterarStatus(int id, bool ativo)
     {
         var c = await db.Categorias.FirstOrDefaultAsync(x => x.Id == id);
@@ -92,10 +92,10 @@ public class ParceirosController(EstoqueDbContext db) : Controller
         return View(await q.OrderBy(p => p.Nome).ToListAsync());
     }
 
-    [Authorize(Policy = Policies.PodeEditar)]
+    [Permissao(Permissoes.CadastroFornecedores)]
     public IActionResult Criar() => View("Form", new ParceiroInput());
 
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.CadastroFornecedores), HttpPost]
     public async Task<IActionResult> Criar(ParceiroInput input)
     {
         if (!ModelState.IsValid) return View("Form", input);
@@ -107,7 +107,7 @@ public class ParceirosController(EstoqueDbContext db) : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    [Authorize(Policy = Policies.PodeEditar)]
+    [Permissao(Permissoes.CadastroFornecedores)]
     public async Task<IActionResult> Editar(int id)
     {
         var p = await db.Parceiros.FirstOrDefaultAsync(x => x.Id == id);
@@ -119,7 +119,7 @@ public class ParceirosController(EstoqueDbContext db) : Controller
         });
     }
 
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.CadastroFornecedores), HttpPost]
     public async Task<IActionResult> Editar(int id, ParceiroInput input)
     {
         var p = await db.Parceiros.FirstOrDefaultAsync(x => x.Id == id);
@@ -132,7 +132,7 @@ public class ParceirosController(EstoqueDbContext db) : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.CadastroFornecedores), HttpPost]
     public async Task<IActionResult> AlterarStatus(int id, bool ativo)
     {
         var p = await db.Parceiros.FirstOrDefaultAsync(x => x.Id == id);

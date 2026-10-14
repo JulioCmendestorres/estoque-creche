@@ -12,7 +12,7 @@ namespace Estoque.Web.Services;
 
 /// <summary>
 /// RF07 / E5.2: relatório de movimentações com filtros. Lê pelos filtros globais (tenant + unidade atual);
-/// no consolidado (só admin) desliga o filtro de unidade e reaplica tenant + unidades vinculadas ao usuário.
+/// no consolidado (permissão de visão consolidada) desliga o filtro de unidade e reaplica o tenant.
 /// </summary>
 public sealed class RelatorioService(EstoqueDbContext db)
 {
@@ -29,16 +29,12 @@ public sealed class RelatorioService(EstoqueDbContext db)
             return (null, "Tipo de movimentação inválido.");
 
         var tenantId = db.Tenant.TenantId ?? throw new InvalidOperationException("Relatório sem tenant.");
-        var usuarioId = db.Tenant.UsuarioId ?? throw new InvalidOperationException("Relatório sem usuário.");
 
         IQueryable<Movimentacao> q;
         if (f.Consolidado)
         {
-            var unidadesDoUsuario = await db.UsuariosUnidades
-                .Where(u => u.UsuarioId == usuarioId).Select(u => u.UnidadeId).ToListAsync();
             // Único ponto que desliga os filtros globais: o tenant é reaplicado aqui mesmo
-            q = db.Movimentacoes.IgnoreQueryFilters()
-                .Where(m => m.TenantId == tenantId && unidadesDoUsuario.Contains(m.UnidadeId));
+            q = db.Movimentacoes.IgnoreQueryFilters().Where(m => m.TenantId == tenantId);
         }
         else
         {

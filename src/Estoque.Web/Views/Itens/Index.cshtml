@@ -1,7 +1,7 @@
 @model ItensIndexViewModel
 @{
     ViewData["Title"] = "Itens";
-    var podeEditar = (await Autorizacao.AuthorizeAsync(User, Policies.PodeEditar)).Succeeded;
+    var podeEditar = Acesso.Tem(Permissoes.CadastroItens);
 }
 <div class="page-header">
     <h1>Itens</h1>

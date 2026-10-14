@@ -1,7 +1,7 @@
 @model List<Categoria>
 @{
     ViewData["Title"] = "Categorias";
-    var podeEditar = (await Autorizacao.AuthorizeAsync(User, Policies.PodeEditar)).Succeeded;
+    var podeEditar = Acesso.Tem(Permissoes.CadastroCategorias);
 }
 <div class="page-header">
     <h1>Categorias</h1>

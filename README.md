@@ -4,8 +4,9 @@ Sistema web (ASP.NET Core MVC + SQL Server) para controle de estoque e doações
 itens, fornecedores, entradas (doação/compra), saídas (uso interno/doação/avaria), saldo por unidade,
 alertas de estoque mínimo, dashboard e auditoria. Escopo e roadmap: [`PLANO.md`](PLANO.md).
 
-**Versão: MVP (Fases 0–4 do plano) + relatórios (E5.2).** Relatório de movimentações com filtros, impressão, PDF e CSV.
-Gráficos, cadastro de usuários e tela de log ficam para a versão completa.
+**Versão: MVP (Fases 0–4 do plano) + relatórios (E5.2) + usuários e perfis (E5.1).** Relatório de movimentações com filtros,
+impressão, PDF e CSV; usuário master único, perfis de acesso com permissões e cada usuário preso à sua unidade.
+Gráficos e tela de log ficam para a versão completa.
 
 ## Instalar no servidor
 
@@ -32,9 +33,10 @@ dotnet run --project src/Estoque.Web --launch-profile http
 ```
 
 Abra http://localhost:5216 e entre com `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`. Com `SEED_DEMO_DATA=true` o banco já vem
-com itens e movimentações de exemplo (e usuários `operacional@` e `visualizador@` com a mesma senha do admin).
+com itens e movimentações de exemplo (e usuários `operacional@`, na Matriz, e `visualizador@`, na Filial, com a mesma senha do admin).
 
-Testes de integração (criam e apagam bancos `EstoqueTeste_*`; usam `ESTOQUE_TEST_ADMIN_CS` ou localhost com autenticação Windows):
+Testes de integração (criam e apagam bancos `EstoqueTeste_*`; usam `ESTOQUE_TEST_ADMIN_CS` ou localhost com autenticação Windows).
+Com o app aberto no Visual Studio (DLL travada), rode com `--artifacts-path <pasta fora do repo>` e `ESTOQUE_TEST_MIGRACOES=<repo>/db/migrations`:
 
 ```bash
 dotnet test
@@ -43,10 +45,10 @@ dotnet test
 ## Estrutura
 
 ```
-db/migrations/      V001 schema · V002 triggers · V003 manutenção · V004 só CNPJ + unidades por tenant (aplicados pelo migrator)
+db/migrations/      V001 schema · V002 triggers · V003 manutenção · V004 só CNPJ + unidades por tenant · V005 perfis e master
 docs/               DEPLOY.md · DECISOES.md · referencia/Cria_Banco.sql (original)
 src/Estoque.Web/    Controllers · Data (DbContext, Migrator, Seed, Interceptors) · Services · Views
-tests/Estoque.Tests regras do banco (T1.4), migrator (T1.3), isolamento de tenant (T2.2), relatórios (E5.2)
+tests/Estoque.Tests regras do banco (T1.4), migrator (T1.3), isolamento de tenant (T2.2), relatórios (E5.2), usuários e perfis (E5.1)
 scripts/            instalar.sh · smoke.sh · server-bootstrap.sh
 compose.yaml        sqlserver · migrator · web · proxy (Caddy)      compose.portainer.yaml  opcional
 ```
@@ -61,7 +63,7 @@ compose.yaml        sqlserver · migrator · web · proxy (Caddy)      compose.p
 | S04 | PBKDF2 (`PasswordHasher`); hash fora da auditoria | ✔ testado |
 | S05 | Antiforgery global | ✔ POST sem token → 400 |
 | S06 | Cookie HttpOnly, SameSite=Lax, expiração 8 h deslizante; Secure | ✔ `Always` quando há domínio (HTTPS) |
-| S07 | `[Authorize]` global + policies; ViewModels | ✔ visualizador/operacional recebem acesso negado nas ações restritas |
+| S07 | `[Authorize]` global + permissões por perfil; ViewModels | ✔ permissões relidas do banco a cada requisição (inativar ou trocar perfil vale na hora); usuários/perfis/troca de unidade só master |
 | S08 | Filtro por tenant/unidade; ID de outro tenant → 404 | ✔ testado |
 | S09 | Só consultas parametrizadas | ✔ (DDL de login com escape no servidor) |
 | S10 | Validação server-side | ✔ DataAnnotations + CNPJ + regras no serviço e no banco |

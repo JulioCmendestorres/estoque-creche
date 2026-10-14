@@ -1,8 +1,8 @@
 @model EstoqueIndexViewModel
 @{
     ViewData["Title"] = "Estoque";
-    var podeEditar = (await Autorizacao.AuthorizeAsync(User, Policies.PodeEditar)).Succeeded;
-    var ehAdmin = (await Autorizacao.AuthorizeAsync(User, Policies.SomenteAdmin)).Succeeded;
+    var podeEditar = Acesso.Tem(Permissoes.EstoqueMovimentar);
+    var podeCancelar = Acesso.Tem(Permissoes.EstoqueCancelar);
     if (Model.ModalAberto == "entrada") { ViewData["AbrirModal"] = "modalEntrada"; }
     if (Model.ModalAberto == "saida") { ViewData["AbrirModal"] = "modalSaida"; }
     var abaEstoque = Model.Aba == "estoque";
@@ -132,7 +132,7 @@ else
                             }
                         </td>
                         <td class="text-end">
-                            @if (ehAdmin && m.Status == StatusMovimentacao.Processada)
+                            @if (podeCancelar && m.Status == StatusMovimentacao.Processada)
                             {
                                 <button class="btn btn-sm btn-outline-danger" title="Cancelar (estornar)" data-bs-toggle="modal" data-bs-target="#modalCancelar"
                                         data-id="@m.Id" data-numero="@m.NumeroMovimentacao"><i class="bi bi-x-circle"></i></button>
@@ -287,7 +287,7 @@ else
     </div>
 }
 
-@if (ehAdmin)
+@if (podeCancelar)
 {
     <div class="modal fade" id="modalCancelar" tabindex="-1" aria-labelledby="tituloCancelar" aria-hidden="true">
         <div class="modal-dialog">

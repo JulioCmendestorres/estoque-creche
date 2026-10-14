@@ -100,3 +100,14 @@ public static class Documentos
         var d => d,
     };
 }
+
+public static class Senhas
+{
+    // Sem caracteres ambíguos (0/O, 1/l/I): a senha é ditada ou copiada de papel
+    private const string Alfabeto = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+    /// <summary>Senha temporária no formato xxxx-xxxx-xxxx-xxxx (19 caracteres, ~92 bits).</summary>
+    public static string GerarTemporaria() =>
+        string.Join('-', Enumerable.Range(0, 4).Select(_ =>
+            System.Security.Cryptography.RandomNumberGenerator.GetString(Alfabeto, 4)));
+}

@@ -135,9 +135,9 @@ static void ConfigurarServicos(WebApplicationBuilder builder)
             o.SlidingExpiration = true;
         });
 
-    s.AddAuthorizationBuilder()
-        .AddPolicy(Policies.PodeEditar, p => p.RequireRole(Papeis.Admin, Papeis.Operacional))
-        .AddPolicy(Policies.SomenteAdmin, p => p.RequireRole(Papeis.Admin));
+    s.AddAuthorization();
+    s.AddSingleton<IAuthorizationPolicyProvider, PoliticaPermissaoProvider>();
+    s.AddScoped<IAuthorizationHandler, PermissaoHandler>();
 
     s.AddAntiforgery(o =>
     {

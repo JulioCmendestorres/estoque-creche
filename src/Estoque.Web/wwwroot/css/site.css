@@ -112,3 +112,6 @@ body { background: var(--app-bg); }
     .badge { border: 1px solid #999; color: #000 !important; background: transparent !important; }
     @page { size: A4 landscape; margin: 12mm; }
 }
+
+.sidebar-secao { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; opacity: .6; padding: 1rem 1rem .25rem; }
+.badge-global { background: #fff3cd; color: #7a5b00; border: 1px solid #f0d58a; font-weight: 500; }

@@ -1,0 +1,51 @@
+@model PerfilInput
+@{
+    var novo = Model.Id == 0;
+    ViewData["Title"] = novo ? "Novo perfil" : "Editar perfil";
+    var marcadas = Model.Permissoes.ToHashSet();
+}
+<div class="page-header"><h1>@ViewData["Title"]</h1></div>
+<div class="card" style="max-width: 760px">
+    <div class="card-body">
+        <form asp-action="@(novo ? "Criar" : "Editar")" asp-route-id="@(novo ? null : Model.Id)" method="post" novalidate>
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-5">
+                    <label asp-for="Nome" class="form-label"></label> <span class="text-danger">*</span>
+                    <input asp-for="Nome" class="form-control" />
+                    <span asp-validation-for="Nome" class="text-danger small"></span>
+                </div>
+                <div class="col-md-7">
+                    <label asp-for="Descricao" class="form-label"></label>
+                    <input asp-for="Descricao" class="form-control" placeholder="Ex.: equipe da cozinha" />
+                </div>
+            </div>
+
+            <h2 class="h6">Permissões</h2>
+            <p class="small text-muted">Sem nenhuma marcada, o perfil só consulta o estoque, as movimentações e o painel da própria unidade.</p>
+            @foreach (var grupo in Permissoes.Todas.GroupBy(p => p.Grupo))
+            {
+                <fieldset class="border rounded p-3 mb-3">
+                    <legend class="float-none w-auto px-2 fs-6 mb-0">@grupo.Key</legend>
+                    @foreach (var d in grupo)
+                    {
+                        var id = "perm_" + d.Codigo.Replace('.', '_');
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" name="Permissoes" value="@d.Codigo" id="@id" checked="@marcadas.Contains(d.Codigo)" />
+                            <label class="form-check-label" for="@id">
+                                @d.Nome
+                                @if (d.Global) { <span class="badge badge-global">matriz e filial</span> }
+                                <span class="d-block small text-muted">@d.Descricao</span>
+                            </label>
+                        </div>
+                    }
+                </fieldset>
+            }
+            <p class="small text-muted"><i class="bi bi-info-circle"></i> Usuários, perfis e a troca entre matriz e filial são exclusivos do usuário master.</p>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Salvar</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>

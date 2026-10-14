@@ -18,7 +18,7 @@ public class EstoqueController(EstoqueDbContext db, MovimentacaoService moviment
     public async Task<IActionResult> Index(string aba = "estoque", string? busca = null, [FromQuery] FiltroMovimentacoes? filtro = null)
         => View(await MontarAsync(aba, busca, filtro ?? new FiltroMovimentacoes()));
 
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.EstoqueMovimentar), HttpPost]
     public async Task<IActionResult> NovaEntrada([Bind(Prefix = "Entrada")] EntradaInput input)
     {
         if (ModelState.IsValid)
@@ -34,7 +34,7 @@ public class EstoqueController(EstoqueDbContext db, MovimentacaoService moviment
         return View(nameof(Index), await MontarAsync("estoque", null, new FiltroMovimentacoes(), entrada: input, modal: "entrada"));
     }
 
-    [Authorize(Policy = Policies.PodeEditar), HttpPost]
+    [Permissao(Permissoes.EstoqueMovimentar), HttpPost]
     public async Task<IActionResult> NovaSaida([Bind(Prefix = "Saida")] SaidaInput input)
     {
         if (ModelState.IsValid)
@@ -50,7 +50,7 @@ public class EstoqueController(EstoqueDbContext db, MovimentacaoService moviment
         return View(nameof(Index), await MontarAsync("estoque", null, new FiltroMovimentacoes(), saida: input, modal: "saida"));
     }
 
-    [Authorize(Policy = Policies.SomenteAdmin), HttpPost]
+    [Permissao(Permissoes.EstoqueCancelar), HttpPost]
     public async Task<IActionResult> Cancelar(int id, string? motivo)
     {
         var r = await movimentacoes.CancelarAsync(id, motivo, User.Identity?.Name ?? "?");
@@ -95,7 +95,7 @@ public class EstoqueController(EstoqueDbContext db, MovimentacaoService moviment
             Saida = saida ?? new SaidaInput { Data = hoje },
             ModalAberto = modal,
             NomeResponsavel = User.Identity?.Name ?? "",
-            NomeUnidade = User.FindFirstValue(ClaimsApp.UnidadeNome) ?? "",
+            NomeUnidade = db.Tenant.UnidadeNome ?? "",
         };
     }
 }

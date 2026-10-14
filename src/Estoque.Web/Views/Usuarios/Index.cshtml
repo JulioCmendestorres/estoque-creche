@@ -1,0 +1,63 @@
+@model List<Usuario>
+@{
+    ViewData["Title"] = "Usuários";
+}
+<div class="page-header">
+    <h1>Usuários</h1>
+    <a asp-action="Criar" class="btn btn-primary ms-auto"><i class="bi bi-person-plus"></i> Novo usuário</a>
+</div>
+<p class="text-muted small" style="max-width: 860px">
+    Cada pessoa fica cadastrada em <strong>uma unidade</strong> e só vê os dados dela. Só o <strong>master</strong> transita entre
+    matriz e filial. O que cada um pode fazer vem do <a asp-controller="Perfis" asp-action="Index">perfil de acesso</a>.
+</p>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light"><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Unidade</th><th>Último acesso</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var u in Model)
+            {
+                <tr class="@(u.Ativo ? "" : "text-muted")">
+                    <td>
+                        @u.Nome
+                        @if (u.Master) { <span class="badge text-bg-dark ms-1" title="Transita entre unidades e gerencia usuários e perfis">Master</span> }
+                        @if (u.TrocarSenha) { <span class="badge text-bg-warning ms-1" title="Precisa trocar a senha no próximo acesso">senha temporária</span> }
+                    </td>
+                    <td class="small">@u.Email</td>
+                    <td>
+                        @if (u.Master)
+                        {
+                            <span class="text-muted small">todas as permissões</span>
+                        }
+                        else
+                        {
+                            @u.Perfil?.Nome
+                            @if (u.Perfil is { Ativo: false }) { <span class="badge text-bg-secondary ms-1">perfil inativo</span> }
+                        }
+                    </td>
+                    <td>@(u.Master ? "Todas" : u.Unidade?.Nome)</td>
+                    <td class="small text-nowrap">@Tempo.Formatar(u.UltimoLoginEm)</td>
+                    <td>@(u.Ativo ? "Ativo" : "Inativo")</td>
+                    <td class="text-end text-nowrap">
+                        <a asp-action="Editar" asp-route-id="@u.Id" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+                        @if (!u.Master)
+                        {
+                            <form asp-action="RedefinirSenha" asp-route-id="@u.Id" method="post" class="d-inline"
+                                  data-confirmar="Gerar uma nova senha temporária para @u.Nome? A senha atual deixa de funcionar.">
+                                <button class="btn btn-sm btn-outline-primary" title="Redefinir senha"><i class="bi bi-key"></i></button>
+                            </form>
+                            <form asp-action="AlterarStatus" asp-route-id="@u.Id" method="post" class="d-inline"
+                                  data-confirmar="@(u.Ativo ? $"Inativar {u.Nome}? A pessoa não conseguirá mais entrar." : "")">
+                                <input type="hidden" name="ativo" value="@(!u.Ativo ? "true" : "false")" />
+                                <button class="btn btn-sm @(u.Ativo ? "btn-outline-danger" : "btn-outline-success")" title="@(u.Ativo ? "Inativar" : "Reativar")">
+                                    <i class="bi @(u.Ativo ? "bi-slash-circle" : "bi-arrow-counterclockwise")"></i>
+                                </button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

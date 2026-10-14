@@ -340,3 +340,53 @@ public class RelatorioIndexViewModel
     public IReadOnlyList<Categoria> Categorias { get; init; } = [];
     public IReadOnlyList<Parceiro> Parceiros { get; init; } = [];
 }
+
+/// <summary>Cadastro/edição de usuário (só o master). A senha não é digitada: o sistema gera uma temporária.</summary>
+public class UsuarioInput
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Informe o nome."), StringLength(255)]
+    [Display(Name = "Nome")]
+    public string Nome { get; set; } = "";
+
+    [Required(ErrorMessage = "Informe o e-mail."), EmailAddress(ErrorMessage = "E-mail inválido."), StringLength(255)]
+    [Display(Name = "E-mail (login)")]
+    public string Email { get; set; } = "";
+
+    [Display(Name = "Perfil de acesso")]
+    public int? PerfilId { get; set; }
+
+    [Required(ErrorMessage = "Escolha a unidade."), Range(1, int.MaxValue, ErrorMessage = "Escolha a unidade.")]
+    [Display(Name = "Unidade")]
+    public int UnidadeId { get; set; }
+
+    /// <summary>Só leitura no formulário: o master não tem perfil e pode trocar de unidade.</summary>
+    public bool Master { get; set; }
+}
+
+public class UsuarioFormViewModel
+{
+    public required UsuarioInput Input { get; init; }
+    public IReadOnlyList<Perfil> Perfis { get; init; } = [];
+    public IReadOnlyList<Unidade> Unidades { get; init; } = [];
+}
+
+public sealed record SenhaGeradaViewModel(string Nome, string Email, string Senha, bool Novo);
+
+public class PerfilInput
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Informe o nome."), StringLength(60)]
+    [Display(Name = "Nome do perfil")]
+    public string Nome { get; set; } = "";
+
+    [StringLength(255)]
+    [Display(Name = "Descrição")]
+    public string? Descricao { get; set; }
+
+    public List<string> Permissoes { get; set; } = [];
+}
+
+public sealed record PerfilLinha(Perfil Perfil, int Usuarios);
