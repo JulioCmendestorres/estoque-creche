@@ -14,6 +14,9 @@
         ["IncluirCanceladas"] = f.IncluirCanceladas ? "true" : null,
         ["Consolidado"] = f.Consolidado ? "true" : null,
     };
+    // asp-all-route-data substitui os asp-route-*: o formato precisa estar no próprio dicionário
+    var rotaPdf = new Dictionary<string, string?>(rota) { ["formato"] = "pdf" };
+    var rotaCsv = new Dictionary<string, string?>(rota) { ["formato"] = "csv" };
 }
 <div class="page-header no-print">
     <h1>Relatórios</h1>
@@ -22,8 +25,8 @@
     {
         <div class="ms-auto d-flex gap-2">
             <button type="button" class="btn btn-outline-secondary" data-imprimir><i class="bi bi-printer"></i> Imprimir</button>
-            <a class="btn btn-outline-danger" asp-action="Exportar" asp-route-formato="pdf" asp-all-route-data="rota"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
-            <a class="btn btn-outline-success" asp-action="Exportar" asp-route-formato="csv" asp-all-route-data="rota"><i class="bi bi-filetype-csv"></i> CSV</a>
+            <a class="btn btn-outline-danger" asp-action="Exportar" asp-all-route-data="rotaPdf"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+            <a class="btn btn-outline-success" asp-action="Exportar" asp-all-route-data="rotaCsv"><i class="bi bi-filetype-csv"></i> CSV</a>
         </div>
     }
 </div>
