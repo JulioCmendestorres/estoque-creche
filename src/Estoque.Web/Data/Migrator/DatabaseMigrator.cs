@@ -37,10 +37,19 @@ public sealed partial class DatabaseMigrator(MigratorOptions opt, ILogger logger
     [GeneratedRegex(@"^[A-Za-z][A-Za-z0-9_]{0,99}$")]
     private static partial Regex NomeBancoValido();
 
-    public string DbConnectionString => new SqlConnectionStringBuilder(opt.AdminConnectionString)
+    /// <summary>Menor tempo (s) de conexão ao banco: logo após reiniciar o container, o SQL Server recupera o banco
+    /// e o login nele pode demorar bem mais que os 15 s padrão do driver.</summary>
+    public const int TempoConexaoBancoSegundos = 60;
+
+    public string DbConnectionString
     {
-        InitialCatalog = opt.DatabaseName
-    }.ConnectionString;
+        get
+        {
+            var b = new SqlConnectionStringBuilder(opt.AdminConnectionString) { InitialCatalog = opt.DatabaseName };
+            b.ConnectTimeout = Math.Max(b.ConnectTimeout, TempoConexaoBancoSegundos);
+            return b.ConnectionString;
+        }
+    }
 
     public async Task ExecutarAsync(CancellationToken ct = default)
     {
@@ -49,6 +58,7 @@ public sealed partial class DatabaseMigrator(MigratorOptions opt, ILogger logger
 
         await AguardarServidorAsync(ct);
         await CriarBancoSeNecessarioAsync(ct);
+        await AguardarBancoOnlineAsync(ct);
 
         await using var conn = new SqlConnection(DbConnectionString);
         await conn.OpenAsync(ct);
@@ -95,6 +105,34 @@ public sealed partial class DatabaseMigrator(MigratorOptions opt, ILogger logger
                 await Task.Delay(espera, ct);
                 espera = TimeSpan.FromSeconds(Math.Min(espera.TotalSeconds * 2, 10));
             }
+        }
+    }
+
+    /// <summary>
+    /// O healthcheck do container só prova que o servidor responde (master). Depois de um reinício o banco
+    /// do sistema ainda pode estar em recuperação, e conectar nele nesse intervalo estoura o tempo do login.
+    /// </summary>
+    private async Task AguardarBancoOnlineAsync(CancellationToken ct)
+    {
+        var limite = DateTime.UtcNow + opt.TempoMaximoEspera;
+        var espera = TimeSpan.FromSeconds(1);
+        while (true)
+        {
+            await using var conn = new SqlConnection(opt.AdminConnectionString);
+            await conn.OpenAsync(ct);
+            await using var cmd = new SqlCommand("SELECT state_desc FROM sys.databases WHERE name = @nome;", conn);
+            cmd.Parameters.AddWithValue("@nome", opt.DatabaseName);
+            var estado = (await cmd.ExecuteScalarAsync(ct)) as string;
+            if (estado == "ONLINE") return;
+
+            if (DateTime.UtcNow >= limite)
+                throw new InvalidOperationException(
+                    $"O banco {opt.DatabaseName} não ficou ONLINE a tempo (estado: {estado ?? "desconhecido"}). " +
+                    "Veja 'docker compose logs sqlserver' e rode o instalador de novo.");
+            logger.LogInformation("Banco {Banco} em {Estado}; aguardando ficar ONLINE. Nova tentativa em {Espera}s.",
+                opt.DatabaseName, estado ?? "estado desconhecido", espera.TotalSeconds);
+            await Task.Delay(espera, ct);
+            espera = TimeSpan.FromSeconds(Math.Min(espera.TotalSeconds * 2, 10));
         }
     }
 
