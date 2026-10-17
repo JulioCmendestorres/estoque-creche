@@ -3,12 +3,14 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c3a3c" />
     <title>@ViewData["Title"] · Estoque e Doações</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="login-bg">
-    <main class="login-wrap">@RenderBody()</main>
+    @* A tela de login ocupa a página inteira; erro, acesso negado e status usam um cartão centralizado *@
+    <main class="@(ViewData["TelaCheia"] is true ? "" : "login-wrap")">@RenderBody()</main>
 </body>
 </html>

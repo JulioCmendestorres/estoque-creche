@@ -11,6 +11,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c3a3c" />
     <title>@ViewData["Title"] · Estoque e Doações</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
@@ -20,7 +21,7 @@
 <div class="app-shell">
     <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="menuLateral">
         <div class="sidebar-brand">
-            <i class="bi bi-box-seam"></i>
+            <span class="marca-selo" aria-hidden="true"><i class="bi bi-box2-heart"></i></span>
             <div>
                 <strong>Estoque &amp; Doações</strong>
                 <small>Creche Fraternidade Menino Jesus</small>
@@ -29,17 +30,19 @@
         </div>
         @if (!trocandoSenha)
         {
-            <nav class="nav flex-column">
-                <a class="nav-link @Ativo("Home", "Index")" asp-controller="Home" asp-action="Index"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            <nav class="nav flex-column" aria-label="Menu principal">
+                <div class="sidebar-secao">Dia a dia</div>
+                <a class="nav-link @Ativo("Home", "Index")" asp-controller="Home" asp-action="Index"><i class="bi bi-grid-1x2"></i> Painel</a>
                 <a class="nav-link @Ativo("Estoque")" asp-controller="Estoque" asp-action="Index"><i class="bi bi-boxes"></i> Estoque</a>
-                <a class="nav-link @Ativo("Itens")" asp-controller="Itens" asp-action="Index"><i class="bi bi-tags"></i> Itens</a>
-                <a class="nav-link @Ativo("Categorias")" asp-controller="Categorias" asp-action="Index"><i class="bi bi-collection"></i> Categorias</a>
-                <a class="nav-link @Ativo("UnidadesMedida")" asp-controller="UnidadesMedida" asp-action="Index"><i class="bi bi-rulers"></i> Unidades de medida</a>
-                <a class="nav-link @Ativo("Parceiros")" asp-controller="Parceiros" asp-action="Index"><i class="bi bi-truck"></i> Fornecedores</a>
                 @if (Acesso.Tem(Permissoes.RelatoriosVer))
                 {
                     <a class="nav-link @Ativo("Relatorios")" asp-controller="Relatorios" asp-action="Index"><i class="bi bi-file-earmark-bar-graph"></i> Relatórios</a>
                 }
+                <div class="sidebar-secao">Cadastros</div>
+                <a class="nav-link @Ativo("Itens")" asp-controller="Itens" asp-action="Index"><i class="bi bi-tags"></i> Itens</a>
+                <a class="nav-link @Ativo("Categorias")" asp-controller="Categorias" asp-action="Index"><i class="bi bi-collection"></i> Categorias</a>
+                <a class="nav-link @Ativo("UnidadesMedida")" asp-controller="UnidadesMedida" asp-action="Index"><i class="bi bi-rulers"></i> Unidades de medida</a>
+                <a class="nav-link @Ativo("Parceiros")" asp-controller="Parceiros" asp-action="Index"><i class="bi bi-truck"></i> Fornecedores</a>
                 @if (Acesso.Master)
                 {
                     <div class="sidebar-secao">Administração</div>

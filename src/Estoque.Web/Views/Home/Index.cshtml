@@ -1,39 +1,42 @@
 @model DashboardViewModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Painel";
     var unidade = Acesso.UnidadeNome;
+    var primeiroNome = (User.Identity?.Name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
+    var hoje = Tempo.Hoje.ToString("dddd, d 'de' MMMM", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
 }
 <div class="page-header">
-    <h1>Dashboard</h1>
-    <span class="badge text-bg-light border">@unidade</span>
+    <h1>Olá, @primeiroNome</h1>
+    <span class="unidade-chip"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> @unidade</span>
+    <p class="page-subtitulo">@(char.ToUpper(hoje[0]) + hoje[1..]) · resumo do estoque e das doações desta unidade.</p>
 </div>
 
 <div class="row g-3 mb-4">
     <div class="col-6 col-xl-3">
-        <div class="card stat-card h-100"><div class="card-body d-flex gap-3 align-items-center">
-            <span class="stat-icon bg-success-subtle text-success"><i class="bi bi-gift"></i></span>
-            <div><div class="stat-value">@Model.DoacoesRecebidas</div><div class="text-muted small">Doações recebidas</div></div>
+        <div class="card stat-card tom-entrada h-100"><div class="card-body d-flex gap-3 align-items-center">
+            <span class="stat-icon" aria-hidden="true"><i class="bi bi-gift"></i></span>
+            <div><div class="stat-value">@Model.DoacoesRecebidas</div><div class="stat-rotulo">Doações recebidas</div></div>
         </div></div>
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card stat-card h-100"><div class="card-body d-flex gap-3 align-items-center">
-            <span class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-box-seam"></i></span>
+        <div class="card stat-card tom-marca h-100"><div class="card-body d-flex gap-3 align-items-center">
+            <span class="stat-icon" aria-hidden="true"><i class="bi bi-box-seam"></i></span>
             <div>
                 <div class="stat-value">@Model.ItensEmEstoque</div>
-                <div class="text-muted small">Itens em estoque <span class="d-block">(@Model.ItensDistintos produtos)</span></div>
+                <div class="stat-rotulo">Itens em estoque <span class="d-block fw-normal">@Model.ItensDistintos produtos</span></div>
             </div>
         </div></div>
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card stat-card h-100"><div class="card-body d-flex gap-3 align-items-center">
-            <span class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-people"></i></span>
-            <div><div class="stat-value">@Model.Beneficiarios</div><div class="text-muted small">Beneficiários</div></div>
+        <div class="card stat-card tom-acento h-100"><div class="card-body d-flex gap-3 align-items-center">
+            <span class="stat-icon" aria-hidden="true"><i class="bi bi-people"></i></span>
+            <div><div class="stat-value">@Model.Beneficiarios</div><div class="stat-rotulo">Beneficiários</div></div>
         </div></div>
     </div>
     <div class="col-6 col-xl-3">
-        <div class="card stat-card h-100"><div class="card-body d-flex gap-3 align-items-center">
-            <span class="stat-icon bg-danger-subtle text-danger"><i class="bi bi-heart"></i></span>
-            <div><div class="stat-value">@Model.DoacoesRealizadas</div><div class="text-muted small">Doações realizadas</div></div>
+        <div class="card stat-card tom-saida h-100"><div class="card-body d-flex gap-3 align-items-center">
+            <span class="stat-icon" aria-hidden="true"><i class="bi bi-heart"></i></span>
+            <div><div class="stat-value">@Model.DoacoesRealizadas</div><div class="stat-rotulo">Doações realizadas</div></div>
         </div></div>
     </div>
 </div>
@@ -42,12 +45,16 @@
     <div class="col-lg-5">
         <div class="card h-100">
             <div class="card-header bg-white fw-semibold d-flex align-items-center gap-2">
-                <i class="bi bi-exclamation-triangle text-danger"></i> Alertas de estoque baixo
+                <i class="bi bi-exclamation-triangle-fill" style="color: var(--acento-600)" aria-hidden="true"></i> Alertas de estoque baixo
+                @if (Model.Alertas.Count > 0) { <span class="badge text-bg-danger ms-auto">@Model.Alertas.Count</span> }
             </div>
             <div class="card-body p-0">
                 @if (Model.Alertas.Count == 0)
                 {
-                    <p class="text-muted p-3 mb-0">Nenhum item abaixo do mínimo nesta unidade.</p>
+                    <div class="text-center text-muted py-4 px-3">
+                        <i class="bi bi-check2-circle d-block mb-2" style="font-size: 2rem; color: var(--entrada)" aria-hidden="true"></i>
+                        Nenhum item abaixo do mínimo nesta unidade.
+                    </div>
                 }
                 else
                 {
@@ -73,8 +80,8 @@
     <div class="col-lg-7">
         <div class="card h-100">
             <div class="card-header bg-white fw-semibold d-flex align-items-center gap-2">
-                <i class="bi bi-clock-history"></i> Últimas movimentações
-                <a asp-controller="Estoque" asp-action="Index" asp-route-aba="movimentacoes" class="ms-auto small">Ver todas</a>
+                <i class="bi bi-clock-history" style="color: var(--marca-600)" aria-hidden="true"></i> Últimas movimentações
+                <a asp-controller="Estoque" asp-action="Index" asp-route-aba="movimentacoes" class="ms-auto small fw-semibold" style="font-family: var(--bs-font-sans-serif)">Ver todas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
             </div>
             <div class="card-body p-0">
                 @if (Model.UltimasMovimentacoes.Count == 0)

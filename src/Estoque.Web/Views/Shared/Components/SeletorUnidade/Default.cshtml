@@ -3,9 +3,8 @@
 @if (Model.Count == 0)
 {
     @* Usuário comum: só a unidade em que está cadastrado *@
-    <span class="d-flex align-items-center gap-2 small" title="Unidade em que você está cadastrado">
-        <i class="bi bi-building text-muted"></i>
-        <span class="badge text-bg-light border fw-normal">@ViewBag.NomeAtual</span>
+    <span class="unidade-chip" title="Unidade em que você está cadastrado">
+        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i> @ViewBag.NomeAtual
     </span>
 }
 else
