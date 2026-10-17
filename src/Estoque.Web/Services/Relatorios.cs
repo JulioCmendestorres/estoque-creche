@@ -163,7 +163,7 @@ public sealed class RelatorioService(EstoqueDbContext db)
                 csv.WriteField(l.UnidadeMedida);
                 csv.WriteField(l.ValorUnitario.ToString("0.00", PtBr));
                 csv.WriteField(l.ValorTotal.ToString("0.00", PtBr));
-                csv.WriteField(l.EhEntrada ? l.Parceiro ?? "Anônimo" : "");
+                csv.WriteField(l.EhEntrada ? l.OrigemDestino : "");
                 csv.WriteField(l.Beneficiario ?? "");
                 csv.WriteField(l.Responsavel);
                 csv.WriteField(l.Status);

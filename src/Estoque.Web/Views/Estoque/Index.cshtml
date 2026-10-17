@@ -119,7 +119,7 @@ else
                         <td class="text-end text-nowrap">@(m.EhEntrada ? "+" : "−")@m.Quantidade @m.Item?.UnidadeMedida</td>
                         <td class="text-end text-nowrap">@Formatos.Moeda(m.ValorTotal)</td>
                         <td class="small">
-                            @if (m.EhEntrada) { @(m.Parceiro?.Nome ?? "Anônimo") }
+                            @if (m.EhEntrada) { @(m.Parceiro?.Nome ?? (m.TipoMovimentacao == TiposMovimentacao.Compra ? "Não informado" : "Anônimo")) }
                             else if (m.Beneficiario is not null) { @m.Beneficiario }
                             else { <span class="text-muted">—</span> }
                         </td>
@@ -192,15 +192,15 @@ else
                             <input name="Entrada.Data" id="Entrada_Data" type="date" class="form-control" value="@Model.Entrada.Data.ToString("yyyy-MM-dd")" required />
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="Entrada.ParceiroId" class="form-label">Fornecedor <span class="text-danger obrigatorio">*</span></label>
-                            <select asp-for="Entrada.ParceiroId" class="form-select" data-obrigatorio-quando="Entrada_Origem=@TiposMovimentacao.Compra">
+                            <label asp-for="Entrada.ParceiroId" class="form-label">Fornecedor</label>
+                            <select asp-for="Entrada.ParceiroId" class="form-select">
                                 <option value="">Anônimo / não informado</option>
                                 @foreach (var p in Model.Parceiros)
                                 {
                                     <option value="@p.Id">@p.Nome</option>
                                 }
                             </select>
-                            <div class="form-text">Obrigatório na compra; opcional na doação.</div>
+                            <div class="form-text">Opcional.</div>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Responsável</label>
@@ -276,7 +276,7 @@ else
                             <textarea asp-for="Saida.Observacao" rows="2" class="form-control"></textarea>
                         </div>
                     </div>
-                    <p class="text-muted small mt-3 mb-0">O valor do estoque é baixado pelo custo médio; o valor unitário da saída é apenas informativo (prestação de contas).</p>
+                    <p class="text-muted small mt-3 mb-0">O valor do estoque é baixado pelo custo médio; o valor unitário da saída é apenas informativo.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>

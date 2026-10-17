@@ -83,8 +83,11 @@ public class RegrasBancoTests(BancoFixture db)
         var semBenef = await Assert.ThrowsAsync<SqlException>(() => Mov(c, s, "doacao_realizada", 1, 1m));
         Assert.Contains("CK_mov_beneficiario_coerente", semBenef.Message);
 
-        var compraSemParceiro = await Assert.ThrowsAsync<SqlException>(() => Mov(c, s, "compra", 1, 1m));
-        Assert.Contains("CK_mov_parceiro_coerente", compraSemParceiro.Message);
+        await Mov(c, s, "compra", 1, 1m); // D-40: compra sem fornecedor é aceita
+
+        var parceiro = await Id(c, "INSERT INTO parceiros (tenant_id, nome, tipo) VALUES (@t, 'P', 'empresa')", ("@t", s.Tenant));
+        var saidaComParceiro = await Assert.ThrowsAsync<SqlException>(() => Mov(c, s, "consumo_interno", 1, 1m, parceiro: parceiro));
+        Assert.Contains("CK_mov_parceiro_coerente", saidaComParceiro.Message);
     }
 
     [Fact]

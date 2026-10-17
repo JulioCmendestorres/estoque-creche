@@ -23,7 +23,7 @@ public class AlterarSenhaInput
     public string SenhaAtual { get; set; } = "";
 
     [Required(ErrorMessage = "Informe a nova senha."), DataType(DataType.Password)]
-    [StringLength(200, MinimumLength = 12, ErrorMessage = "A nova senha precisa ter ao menos 12 caracteres.")]
+    [StringLength(200, MinimumLength = 3, ErrorMessage = "A nova senha precisa ter ao menos 3 caracteres.")]
     [Display(Name = "Nova senha")]
     public string NovaSenha { get; set; } = "";
 
@@ -303,7 +303,7 @@ public sealed record LinhaRelatorio(
     public bool EhEntrada => TiposMovimentacao.EhEntrada(Tipo);
     public bool Cancelada => Status == StatusMovimentacao.Cancelada;
     /// <summary>Entrada: fornecedor/doador; saída: beneficiário (doação) ou o tipo de uso.</summary>
-    public string OrigemDestino => EhEntrada ? Parceiro ?? "Anônimo" : Beneficiario ?? "—";
+    public string OrigemDestino => EhEntrada ? Parceiro ?? (Tipo == TiposMovimentacao.Compra ? "Não informado" : "Anônimo") : Beneficiario ?? "—";
 }
 
 /// <summary>Totais por tipo, só de movimentações processadas (canceladas não contam).</summary>

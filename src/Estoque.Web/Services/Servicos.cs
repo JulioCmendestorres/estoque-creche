@@ -61,8 +61,6 @@ public sealed class MovimentacaoService(EstoqueDbContext db)
         int? parceiroId = input.ParceiroId is > 0 ? input.ParceiroId : null;
         if (parceiroId is not null && !await db.Parceiros.AnyAsync(p => p.Id == parceiroId && p.Ativo))
             return Resultado.Falha("Fornecedor não encontrado ou inativo.");
-        if (input.Origem == TiposMovimentacao.Compra && parceiroId is null)
-            return Resultado.Falha("Compra exige fornecedor identificado.");
         if (input.Data.Year < 2000)
             return Resultado.Falha("Informe a data da entrada.");
         if (input.Data > Tempo.Hoje)
