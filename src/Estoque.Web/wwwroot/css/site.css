@@ -334,6 +334,8 @@ fieldset.border { border-color: var(--borda) !important; background: var(--super
 .list-group { --bs-list-group-active-bg: var(--marca-600); --bs-list-group-active-border-color: var(--marca-600); --bs-list-group-border-color: var(--borda); }
 
 .alert { border: 1px solid transparent; border-radius: var(--raio); }
+.validation-summary-errors ul { margin: 0; padding-left: 1.1rem; }
+.validation-summary-valid { display: none; }
 .alert-success { background: var(--entrada-bg); border-color: #9dcdb2; color: #124d31; }
 .alert-danger { background: var(--saida-bg); border-color: #dba393; color: #6e2614; }
 .alert-warning { background: var(--aviso-bg); border-color: #e3c36c; color: #5c3d00; }
