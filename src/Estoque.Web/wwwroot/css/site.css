@@ -163,7 +163,11 @@ a { text-underline-offset: .18em; }
     font-weight: 600; font-size: .95rem; color: var(--tinta-2);
 }
 .unidade-chip i { color: var(--marca-600); }
-@media (max-width: 576px) { .seletor-unidade select { min-width: 0; } }
+@media (max-width: 576px) {
+    .seletor-unidade { min-width: 0; flex: 1 1 auto; }
+    .seletor-unidade select { min-width: 0; }
+    .seletor-unidade > i { display: none; }
+}
 
 .avatar {
     width: 32px; height: 32px; border-radius: 50%;

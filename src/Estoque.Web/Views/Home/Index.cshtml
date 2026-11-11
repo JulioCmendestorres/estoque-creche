@@ -23,17 +23,14 @@
             {
                 <div class="table-responsive">
                     <table class="table mb-0">
-                        <thead><tr><th>Item</th><th class="text-end">Atual</th><th class="text-end">Mínimo</th><th></th></tr></thead>
+                        <thead><tr><th>Item</th><th class="text-end">Atual</th><th class="text-end">Mínimo</th></tr></thead>
                         <tbody>
                         @foreach (var a in Model.Alertas)
                         {
                             <tr>
-                                <td>@a.Item!.Nome</td>
+                                <td><a asp-controller="Estoque" asp-action="Index" asp-route-busca="@a.Item!.Nome" title="Ver no estoque">@a.Item!.Nome</a></td>
                                 <td class="text-end text-danger fw-semibold text-nowrap">@a.QuantidadeAtual @a.Item.UnidadeMedida</td>
                                 <td class="text-end">@a.QuantidadeMinima</td>
-                                <td class="text-end text-nowrap">
-                                    <a asp-controller="Estoque" asp-action="Index" asp-route-busca="@a.Item.Nome">Ver no estoque</a>
-                                </td>
                             </tr>
                         }
                         </tbody>
