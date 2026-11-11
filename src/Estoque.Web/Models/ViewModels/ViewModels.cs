@@ -173,12 +173,10 @@ public class UnidadeMedidaLinha
 
 // ---------------------------------------------------------------- Estoque
 
-public class EntradaInput
+/// <summary>Um item da entrada. Cada linha vira uma movimentação própria (número próprio, cancelável à parte).</summary>
+public class EntradaLinha
 {
-    [Required, Display(Name = "Origem")]
-    public string Origem { get; set; } = TiposMovimentacao.DoacaoRecebida;
-
-    [Required(ErrorMessage = "Selecione o item."), Range(1, int.MaxValue, ErrorMessage = "Selecione o item."), Display(Name = "Item")]
+    [Range(1, int.MaxValue, ErrorMessage = "Escolha cada item na lista de busca."), Display(Name = "Item")]
     public int ItemId { get; set; }
 
     [Range(1, 1000000, ErrorMessage = "A quantidade deve ser maior que zero."), Display(Name = "Quantidade")]
@@ -186,6 +184,17 @@ public class EntradaInput
 
     [Range(0, 99999999, ErrorMessage = "Valor inválido."), Display(Name = "Valor unitário estimado (R$)")]
     public decimal? ValorUnitario { get; set; }
+}
+
+/// <summary>Entrada com vários itens: origem, fornecedor, data e observação valem para todas as linhas.</summary>
+public class EntradaInput
+{
+    public const int MaximoLinhas = 50;
+
+    [Required, Display(Name = "Origem")]
+    public string Origem { get; set; } = TiposMovimentacao.DoacaoRecebida;
+
+    public List<EntradaLinha> Linhas { get; set; } = [];
 
     [Display(Name = "Data")]
     public DateOnly Data { get; set; }
@@ -237,7 +246,7 @@ public class EstoqueIndexViewModel
     public IReadOnlyList<Movimentacao> Movimentacoes { get; init; } = [];
     public FiltroMovimentacoes Filtro { get; init; } = new();
     // Itens são buscados sob demanda (/Itens/Buscar); aqui vão só os já escolhidos, para reexibir o formulário
-    public Item? ItemEntrada { get; init; }
+    public IReadOnlyDictionary<int, Item> ItensEntrada { get; init; } = new Dictionary<int, Item>();
     public Item? ItemSaida { get; init; }
     public Item? ItemFiltro { get; init; }
     public IReadOnlyList<Parceiro> Parceiros { get; init; } = [];
@@ -392,3 +401,6 @@ public class PerfilInput
 }
 
 public sealed record PerfilLinha(Perfil Perfil, int Usuarios);
+
+/// <summary>Uma linha do formulário de entrada (_EntradaLinha). Indice "__i__" = molde para linhas novas.</summary>
+public record EntradaLinhaModel(string Indice, EntradaLinha Linha, Item? Item);

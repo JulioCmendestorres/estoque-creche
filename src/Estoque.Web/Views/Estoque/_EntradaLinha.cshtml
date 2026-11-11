@@ -1,0 +1,36 @@
+@model EntradaLinhaModel
+@* Uma linha de item da entrada. Indice "__i__" = molde usado pelo site.js para criar linhas novas.
+   O campo Entrada.Linhas.Index deixa o MVC ligar a lista mesmo com índices pulados (linha removida). *@
+@{
+    var i = Model.Indice;
+    var id = $"Entrada_Linhas_{i}_";
+    var nome = $"Entrada.Linhas[{i}]";
+    var ptBr = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+}
+<div class="entrada-linha row g-2 align-items-end" data-entrada-linha>
+    <input type="hidden" name="Entrada.Linhas.Index" value="@i" />
+    <div class="col-12 col-md-5">
+        <label class="form-label small" for="@(id)ItemId_busca">Item</label>
+        @await Html.PartialAsync("_BuscaItem", new BuscaItemModel($"{id}ItemId", $"{nome}.ItemId", "entrada", Model.Item,
+            IdUnidadeAlvo: $"{id}Unidade", IdValorAlvo: $"{id}ValorUnitario"))
+    </div>
+    <div class="col-4 col-md-2">
+        <label class="form-label small" for="@(id)Quantidade">Quantidade</label>
+        <input id="@(id)Quantidade" name="@(nome).Quantidade" type="number" min="1" max="1000000" inputmode="numeric" class="form-control" required
+               value="@Model.Linha.Quantidade" data-linha-quantidade />
+    </div>
+    <div class="col-3 col-md-2">
+        <label class="form-label small" for="@(id)Unidade">Unidade</label>
+        <input id="@(id)Unidade" class="form-control" readonly tabindex="-1" value="@Model.Item?.UnidadeMedida" />
+    </div>
+    <div class="col-5 col-md-2">
+        <label class="form-label small" for="@(id)ValorUnitario">Valor unit. (R$)</label>
+        <input id="@(id)ValorUnitario" name="@(nome).ValorUnitario" type="text" inputmode="decimal" class="form-control" placeholder="0,00"
+               value="@(Model.Linha.ValorUnitario?.ToString("0.00", ptBr))" />
+    </div>
+    <div class="col-12 col-md-1 text-end">
+        <button type="button" class="btn btn-outline-secondary" data-remover aria-label="Remover este item da entrada" title="Remover este item">
+            <i class="bi bi-x-lg" aria-hidden="true"></i><span class="d-md-none">Remover</span>
+        </button>
+    </div>
+</div>

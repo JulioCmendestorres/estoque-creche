@@ -372,6 +372,20 @@ fieldset.border { border-color: var(--borda) !important; background: var(--super
 .busca-item-lista .list-group-item.ativo { background: var(--marca-50); }
 .busca-item-vazio { padding: .6rem .9rem; color: var(--apagado); font-size: .9rem; background: var(--superficie); }
 
+/* ---------- Entrada com vários itens ---------- */
+.entrada-itens legend { float: none; width: auto; margin-bottom: .5rem; }
+/* No celular cada linha é um bloco com rótulos; em tela larga só a primeira linha mostra os rótulos (viram cabeçalho) */
+@media (max-width: 767.98px) {
+    .entrada-linha { padding-bottom: 1rem; border-bottom: 1px solid var(--borda); }
+    .entrada-linha:last-child { padding-bottom: 0; border-bottom: 0; }
+}
+@media (min-width: 768px) {
+    .entrada-linha:not(:first-child) .form-label {
+        position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+        overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+}
+
 [hidden] { display: none !important; }
 
 /* ---------- Relatórios: impressão ---------- */

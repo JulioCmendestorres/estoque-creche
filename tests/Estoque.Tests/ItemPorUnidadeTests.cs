@@ -62,7 +62,8 @@ public class ItemPorUnidadeTests(BancoFixture db)
         await using var ctx = Contexto(s, s.Filial);
         var r = await new MovimentacaoService(ctx).RegistrarEntradaAsync(new EntradaInput
         {
-            Origem = TiposMovimentacao.DoacaoRecebida, ItemId = s.Item, Quantidade = 1, Data = Tempo.Hoje,
+            Origem = TiposMovimentacao.DoacaoRecebida, Data = Tempo.Hoje,
+            Linhas = [new EntradaLinha { ItemId = s.Item, Quantidade = 1 }],
         });
         Assert.False(r.Ok);
         Assert.Contains("desativado nesta unidade", r.Erro);

@@ -149,9 +149,9 @@ else
 
 @if (podeEditar)
 {
-    <!-- Modal: Registrar Entrada -->
+    <!-- Modal: Registrar Entrada (vários itens com o mesmo cabeçalho) -->
     <div class="modal fade" id="modalEntrada" tabindex="-1" aria-labelledby="tituloEntrada" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <form class="modal-content" asp-action="NovaEntrada" method="post" novalidate>
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="tituloEntrada"><i class="bi bi-box-arrow-in-down text-success"></i> Registrar entrada</h2>
@@ -163,36 +163,19 @@ else
                         <div asp-validation-summary="All" class="alert alert-danger py-2 small"></div>
                     }
                     <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-6 col-md-3">
                             <label asp-for="Entrada.Origem" class="form-label"></label>
                             <select asp-for="Entrada.Origem" class="form-select">
                                 <option value="@TiposMovimentacao.DoacaoRecebida">Doação</option>
                                 <option value="@TiposMovimentacao.Compra">Compra</option>
                             </select>
                         </div>
-                        <div class="col-md-8">
-                            <label for="Entrada_ItemId_busca" class="form-label">Item <span class="text-danger">*</span></label>
-                            @await Html.PartialAsync("_BuscaItem", new BuscaItemModel("Entrada_ItemId", "Entrada.ItemId", "entrada", Model.ItemEntrada, IdUnidadeAlvo: "Entrada_Unidade", IdValorAlvo: "Entrada_ValorUnitario"))
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <label asp-for="Entrada.Quantidade" class="form-label"></label> <span class="text-danger">*</span>
-                            <input asp-for="Entrada.Quantidade" type="number" min="1" class="form-control" required />
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <label class="form-label" for="Entrada_Unidade">Unidade</label>
-                            <input id="Entrada_Unidade" class="form-control" readonly tabindex="-1" value="@Model.ItemEntrada?.UnidadeMedida" />
-                        </div>
-                        <div class="col-6 col-md-3">
-                            <label asp-for="Entrada.ValorUnitario" class="form-label"></label>
-                            <input asp-for="Entrada.ValorUnitario" type="text" inputmode="decimal" class="form-control" placeholder="0,00"
-                                   value="@(Model.Entrada.ValorUnitario?.ToString("0.00", System.Globalization.CultureInfo.GetCultureInfo("pt-BR")))" />
-                        </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <label asp-for="Entrada.Data" class="form-label"></label>
                             <input name="Entrada.Data" id="Entrada_Data" type="date" class="form-control" value="@Model.Entrada.Data.ToString("yyyy-MM-dd")" required />
                         </div>
-                        <div class="col-md-6">
-                            <label asp-for="Entrada.ParceiroId" class="form-label">Fornecedor</label>
+                        <div class="col-md-4">
+                            <label asp-for="Entrada.ParceiroId" class="form-label">Fornecedor ou doador</label>
                             <select asp-for="Entrada.ParceiroId" class="form-select">
                                 <option value="">Anônimo / não informado</option>
                                 @foreach (var p in Model.Parceiros)
@@ -200,16 +183,37 @@ else
                                     <option value="@p.Id">@p.Nome</option>
                                 }
                             </select>
-                            <div class="form-text">Opcional.</div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <label class="form-label">Responsável</label>
                             <input class="form-control" value="@Model.NomeResponsavel" readonly tabindex="-1" />
                         </div>
-                        <div class="col-12">
-                            <label asp-for="Entrada.Observacao" class="form-label"></label>
-                            <textarea asp-for="Entrada.Observacao" rows="2" class="form-control"></textarea>
+                    </div>
+
+                    @{
+                        var linhasEntrada = Model.Entrada.Linhas.Count > 0 ? Model.Entrada.Linhas : [new EntradaLinha()];
+                    }
+                    <fieldset class="entrada-itens mt-4" data-entrada-linhas data-max="@EntradaInput.MaximoLinhas">
+                        <legend class="h6 d-flex align-items-baseline gap-2">
+                            Itens recebidos <span class="text-muted fw-normal small" data-contador aria-live="polite"></span>
+                        </legend>
+                        <div class="d-grid gap-3 gap-md-2" data-linhas>
+                            @for (var n = 0; n < linhasEntrada.Count; n++)
+                            {
+                                var linha = linhasEntrada[n];
+                                @await Html.PartialAsync("_EntradaLinha", new EntradaLinhaModel(n.ToString(), linha, Model.ItensEntrada.GetValueOrDefault(linha.ItemId)))
+                            }
                         </div>
+                        <template>
+                            @await Html.PartialAsync("_EntradaLinha", new EntradaLinhaModel("__i__", new EntradaLinha(), null))
+                        </template>
+                        <button type="button" class="btn btn-outline-primary mt-3" data-adicionar><i class="bi bi-plus-lg" aria-hidden="true"></i> Adicionar outro item</button>
+                    </fieldset>
+
+                    <div class="mt-4">
+                        <label asp-for="Entrada.Observacao" class="form-label"></label>
+                        <textarea asp-for="Entrada.Observacao" rows="2" class="form-control"></textarea>
+                        <div class="form-text">Origem, data, fornecedor e observação valem para todos os itens. Cada item vira uma movimentação própria.</div>
                     </div>
                 </div>
                 <div class="modal-footer">

@@ -50,6 +50,7 @@ function iniciarBuscaItem(box) {
         definirAlvo(it.unidadeMedida);
         preencherValor(it.precoEstimado);
         fechar();
+        box.dispatchEvent(new CustomEvent("item-escolhido", { bubbles: true }));
     }
 
     function marcar(i) {
@@ -131,6 +132,7 @@ function iniciarBuscaItem(box) {
     const form = box.closest("form");
     if (form && obrigatorio) {
         form.addEventListener("submit", ev => {
+            if (!box.isConnected) return; // linha removida do formulário
             if (!hid.value) {
                 ev.preventDefault();
                 txt.classList.add("is-invalid");
@@ -140,8 +142,76 @@ function iniciarBuscaItem(box) {
     }
 }
 
+/**
+ * Entrada com vários itens: as linhas saem de um <template> com "__i__" no lugar do índice.
+ * Índices nunca são reaproveitados; o campo Entrada.Linhas.Index de cada linha diz ao servidor quais existem.
+ */
+function iniciarLinhasEntrada(area) {
+    const molde = area.querySelector("template");
+    const lista = area.querySelector("[data-linhas]");
+    const contador = area.querySelector("[data-contador]");
+    const btnAdicionar = area.querySelector("[data-adicionar]");
+    const maximo = Number(area.dataset.max) || 50;
+    let proximo = lista.children.length;
+
+    const linhas = () => [...lista.querySelectorAll("[data-entrada-linha]")];
+    const vazia = linha => !linha.querySelector('input[type="hidden"][name$=".ItemId"]').value
+        && !linha.querySelector('.busca-item input[type="text"]').value.trim();
+
+    function atualizar() {
+        const n = linhas().length;
+        contador.textContent = n === 1 ? "1 item" : n + " itens";
+        lista.querySelectorAll("[data-remover]").forEach(b => { b.hidden = n <= 1; });
+        btnAdicionar.disabled = n >= maximo;
+    }
+
+    function adicionar() {
+        if (linhas().length >= maximo) return;
+        lista.insertAdjacentHTML("beforeend", molde.innerHTML.replaceAll("__i__", String(proximo++)));
+        const nova = lista.lastElementChild;
+        iniciarBuscaItem(nova.querySelector("[data-busca-item]"));
+        atualizar();
+        nova.querySelector('.busca-item input[type="text"]').focus();
+    }
+
+    btnAdicionar.addEventListener("click", adicionar);
+
+    lista.addEventListener("click", ev => {
+        const btn = ev.target.closest("[data-remover]");
+        if (!btn) return;
+        btn.closest("[data-entrada-linha]").remove();
+        atualizar();
+        btnAdicionar.focus();
+    });
+
+    // Escolheu o item: segue direto para a quantidade
+    lista.addEventListener("item-escolhido", ev => {
+        const qtd = ev.target.closest("[data-entrada-linha]").querySelector("[data-linha-quantidade]");
+        qtd.focus();
+        qtd.select();
+    });
+
+    // Enter na quantidade ou no valor abre a próxima linha em vez de enviar a entrada pela metade
+    lista.addEventListener("keydown", ev => {
+        if (ev.key !== "Enter" || ev.target.closest(".busca-item")) return;
+        ev.preventDefault();
+        const ultima = linhas().at(-1);
+        if (vazia(ultima)) ultima.querySelector('.busca-item input[type="text"]').focus();
+        else adicionar();
+    });
+
+    // Linhas em branco que sobraram não vão para o servidor (fase de captura: antes da validação de cada busca)
+    area.closest("form").addEventListener("submit", () => {
+        linhas().forEach(l => { if (vazia(l) && linhas().length > 1) l.remove(); });
+        atualizar();
+    }, true);
+
+    atualizar();
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("[data-busca-item]").forEach(iniciarBuscaItem);
+    document.querySelectorAll("[data-entrada-linhas]").forEach(iniciarLinhasEntrada);
 
     // Mostra/oculta um bloco conforme o valor de um select: data-mostrar-quando="idDoSelect=valor1|valor2"
     document.querySelectorAll("[data-mostrar-quando]").forEach(bloco => {

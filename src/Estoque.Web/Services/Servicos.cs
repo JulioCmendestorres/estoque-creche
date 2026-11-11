@@ -49,14 +49,16 @@ public static class ErrosBanco
 
 public sealed class MovimentacaoService(EstoqueDbContext db)
 {
+    /// <summary>Registra todas as linhas da entrada de uma vez; qualquer falha desfaz o conjunto.</summary>
     public async Task<Resultado> RegistrarEntradaAsync(EntradaInput input)
     {
         if (!TiposMovimentacao.Entradas.Contains(input.Origem))
             return Resultado.Falha("Origem inválida.");
 
-        var item = await db.Itens.FirstOrDefaultAsync(i => i.Id == input.ItemId && i.Ativo);
-        if (item is null) return Resultado.Falha("Item não encontrado ou inativo.");
-        if (await DesativadoNaUnidadeAsync(item.Id)) return Resultado.Falha(MensagemDesativadoNaUnidade);
+        var linhas = input.Linhas;
+        if (linhas.Count == 0) return Resultado.Falha("Adicione pelo menos um item à entrada.");
+        if (linhas.Count > EntradaInput.MaximoLinhas)
+            return Resultado.Falha($"Uma entrada aceita até {EntradaInput.MaximoLinhas} itens. Registre o restante em outra entrada.");
 
         int? parceiroId = input.ParceiroId is > 0 ? input.ParceiroId : null;
         if (parceiroId is not null && !await db.Parceiros.AnyAsync(p => p.Id == parceiroId && p.Ativo))
@@ -66,18 +68,38 @@ public sealed class MovimentacaoService(EstoqueDbContext db)
         if (input.Data > Tempo.Hoje)
             return Resultado.Falha("A data da entrada não pode ser futura.");
 
-        db.Movimentacoes.Add(new Movimentacao
+        var ids = linhas.Select(l => l.ItemId).Distinct().ToList();
+        var itens = await db.Itens.Where(i => ids.Contains(i.Id) && i.Ativo).ToDictionaryAsync(i => i.Id);
+        // Filtro global de Estoques = unidade atual
+        var desativados = await db.Estoques.Where(e => ids.Contains(e.ItemId) && !e.Ativo).Select(e => e.ItemId).ToListAsync();
+
+        var observacao = Limpar(input.Observacao);
+        for (var n = 0; n < linhas.Count; n++)
         {
-            TipoMovimentacao = input.Origem,
-            ItemId = item.Id,
-            Quantidade = input.Quantidade,
-            ValorUnitario = input.ValorUnitario ?? item.PrecoEstimado ?? 0,
-            DataMovimentacao = input.Data,
-            ParceiroId = parceiroId,
-            Observacoes = Limpar(input.Observacao),
-            ResponsavelId = db.Tenant.UsuarioId!.Value,
-            Status = StatusMovimentacao.Processada,
-        });
+            var l = linhas[n];
+            // Com um item só a mensagem dispensa o número da linha
+            var onde = linhas.Count == 1 ? "" : $"Linha {n + 1}: ";
+            if (!itens.TryGetValue(l.ItemId, out var item))
+                return Resultado.Falha(onde + "Item não encontrado ou inativo.");
+            if (desativados.Contains(item.Id))
+                return Resultado.Falha(onde + (linhas.Count == 1 ? MensagemDesativadoNaUnidade : $"{item.Nome} está desativado nesta unidade. Reative-o na tela de Itens para movimentar."));
+            if (l.Quantidade < 1)
+                return Resultado.Falha(onde + "A quantidade deve ser maior que zero.");
+
+            db.Movimentacoes.Add(new Movimentacao
+            {
+                TipoMovimentacao = input.Origem,
+                ItemId = item.Id,
+                Quantidade = l.Quantidade,
+                ValorUnitario = l.ValorUnitario ?? item.PrecoEstimado ?? 0,
+                DataMovimentacao = input.Data,
+                ParceiroId = parceiroId,
+                Observacoes = observacao,
+                ResponsavelId = db.Tenant.UsuarioId!.Value,
+                Status = StatusMovimentacao.Processada,
+            });
+        }
+        // Um único SaveChanges: ou todas as linhas entram, ou nenhuma
         return await SalvarAsync();
     }
 

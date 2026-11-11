@@ -26,7 +26,7 @@ public class EstoqueController(EstoqueDbContext db, MovimentacaoService moviment
             var r = await movimentacoes.RegistrarEntradaAsync(input);
             if (r.Ok)
             {
-                TempData["Sucesso"] = "Entrada registrada.";
+                TempData["Sucesso"] = input.Linhas.Count == 1 ? "Entrada registrada." : $"Entrada registrada com {input.Linhas.Count} itens.";
                 return RedirectToAction(nameof(Index), new { aba = "movimentacoes" });
             }
             ModelState.AddModelError(string.Empty, r.Erro!);
@@ -75,7 +75,8 @@ public class EstoqueController(EstoqueDbContext db, MovimentacaoService moviment
         var movs = await movQ.OrderByDescending(m => m.DataMovimentacao).ThenByDescending(m => m.Id).Take(500).ToListAsync();
 
         // Itens já escolhidos (para reexibir formulário/filtro com erro); nada de carregar o catálogo inteiro
-        var ids = new[] { entrada?.ItemId, saida?.ItemId, filtro.ItemId }.Where(i => i is > 0).Select(i => i!.Value).Distinct().ToList();
+        var idsEntrada = entrada?.Linhas.Select(l => l.ItemId).Where(i => i > 0).Distinct().ToList() ?? [];
+        var ids = new[] { saida?.ItemId, filtro.ItemId }.Where(i => i is > 0).Select(i => i!.Value).Concat(idsEntrada).Distinct().ToList();
         var escolhidos = ids.Count == 0 ? [] : await db.Itens.Where(i => ids.Contains(i.Id)).ToDictionaryAsync(i => i.Id);
         Item? Escolhido(int? id) => id is > 0 && escolhidos.TryGetValue(id.Value, out var it) ? it : null;
 
@@ -87,7 +88,7 @@ public class EstoqueController(EstoqueDbContext db, MovimentacaoService moviment
             Saldos = saldos,
             Movimentacoes = movs,
             Filtro = filtro,
-            ItemEntrada = Escolhido(entrada?.ItemId),
+            ItensEntrada = escolhidos.Where(p => idsEntrada.Contains(p.Key)).ToDictionary(p => p.Key, p => p.Value),
             ItemSaida = Escolhido(saida?.ItemId),
             ItemFiltro = Escolhido(filtro.ItemId),
             Parceiros = await db.Parceiros.Where(p => p.Ativo).OrderBy(p => p.Nome).ToListAsync(),

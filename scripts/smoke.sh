@@ -76,8 +76,8 @@ HOJE="$(date +%F)"
 passo "Entrada de 10 unidades"
 T="$(curl -fsS -c "$JAR" -b "$JAR" "$BASE/Estoque" | token)"
 curl -fsS -o /dev/null -c "$JAR" -b "$JAR" \
-  --data-urlencode "Entrada.Origem=doacao_recebida" --data-urlencode "Entrada.ItemId=$ITEM" \
-  --data-urlencode "Entrada.Quantidade=10" --data-urlencode "Entrada.ValorUnitario=2,50" \
+  --data-urlencode "Entrada.Origem=doacao_recebida" --data-urlencode "Entrada.Linhas[0].ItemId=$ITEM" \
+  --data-urlencode "Entrada.Linhas[0].Quantidade=10" --data-urlencode "Entrada.Linhas[0].ValorUnitario=2,50" \
   --data-urlencode "Entrada.Data=$HOJE" --data-urlencode "__RequestVerificationToken=$T" \
   "$BASE/Estoque/NovaEntrada"
 
