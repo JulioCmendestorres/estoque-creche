@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="login-bg">
-    @* A tela de login ocupa a página inteira; erro, acesso negado e status usam um cartão centralizado *@
-    <main class="@(ViewData["TelaCheia"] is true ? "" : "login-wrap")">@RenderBody()</main>
+    @* Login, erro, acesso negado e status: conteúdo centralizado *@
+    <main class="login-wrap">@RenderBody()</main>
 </body>
 </html>

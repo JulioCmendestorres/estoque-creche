@@ -190,7 +190,7 @@
                             <td class="text-end text-nowrap">@Formatos.Moeda(l.ValorTotal)</td>
                             <td class="small">@l.OrigemDestino</td>
                             <td class="small">@l.Responsavel</td>
-                            <td><span class="badge @(l.Cancelada ? "text-bg-secondary" : "text-bg-light border")">@l.Status</span></td>
+                            <td>@if (l.Cancelada) { <span class="badge text-bg-secondary">@l.Status</span> } else { @l.Status }</td>
                         </tr>
                     }
                     </tbody>

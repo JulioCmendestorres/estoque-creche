@@ -1,114 +1,94 @@
 @model DashboardViewModel
 @{
     ViewData["Title"] = "Painel";
-    var unidade = Acesso.UnidadeNome;
-    var primeiroNome = (User.Identity?.Name ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
     var hoje = Tempo.Hoje.ToString("dddd, d 'de' MMMM", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
 }
 <div class="page-header">
-    <h1>Olá, @primeiroNome</h1>
-    <span class="unidade-chip"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> @unidade</span>
-    <p class="page-subtitulo">@(char.ToUpper(hoje[0]) + hoje[1..]) · resumo do estoque e das doações desta unidade.</p>
+    <h1>Painel</h1>
+    <p class="page-subtitulo">@(char.ToUpper(hoje[0]) + hoje[1..]) · @Acesso.UnidadeNome</p>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-6 col-xl-3">
-        <div class="card stat-card tom-entrada h-100"><div class="card-body d-flex gap-3 align-items-center">
-            <span class="stat-icon" aria-hidden="true"><i class="bi bi-gift"></i></span>
-            <div><div class="stat-value">@Model.DoacoesRecebidas</div><div class="stat-rotulo">Doações recebidas</div></div>
-        </div></div>
-    </div>
-    <div class="col-6 col-xl-3">
-        <div class="card stat-card tom-marca h-100"><div class="card-body d-flex gap-3 align-items-center">
-            <span class="stat-icon" aria-hidden="true"><i class="bi bi-box-seam"></i></span>
-            <div>
-                <div class="stat-value">@Model.ItensEmEstoque</div>
-                <div class="stat-rotulo">Itens em estoque <span class="d-block fw-normal">@Model.ItensDistintos produtos</span></div>
-            </div>
-        </div></div>
-    </div>
-    <div class="col-6 col-xl-3">
-        <div class="card stat-card tom-acento h-100"><div class="card-body d-flex gap-3 align-items-center">
-            <span class="stat-icon" aria-hidden="true"><i class="bi bi-people"></i></span>
-            <div><div class="stat-value">@Model.Beneficiarios</div><div class="stat-rotulo">Beneficiários</div></div>
-        </div></div>
-    </div>
-    <div class="col-6 col-xl-3">
-        <div class="card stat-card tom-saida h-100"><div class="card-body d-flex gap-3 align-items-center">
-            <span class="stat-icon" aria-hidden="true"><i class="bi bi-heart"></i></span>
-            <div><div class="stat-value">@Model.DoacoesRealizadas</div><div class="stat-rotulo">Doações realizadas</div></div>
-        </div></div>
-    </div>
-</div>
-
-<div class="row g-3">
-    <div class="col-lg-5">
-        <div class="card h-100">
-            <div class="card-header bg-white fw-semibold d-flex align-items-center gap-2">
-                <i class="bi bi-exclamation-triangle-fill" style="color: var(--acento-600)" aria-hidden="true"></i> Alertas de estoque baixo
-                @if (Model.Alertas.Count > 0) { <span class="badge text-bg-danger ms-auto">@Model.Alertas.Count</span> }
-            </div>
-            <div class="card-body p-0">
-                @if (Model.Alertas.Count == 0)
-                {
-                    <div class="text-center text-muted py-4 px-3">
-                        <i class="bi bi-check2-circle d-block mb-2" style="font-size: 2rem; color: var(--entrada)" aria-hidden="true"></i>
-                        Nenhum item abaixo do mínimo nesta unidade.
-                    </div>
-                }
-                else
-                {
-                    <div class="table-responsive">
-                        <table class="table mb-0">
-                            <thead><tr><th>Item</th><th class="text-end">Atual</th><th class="text-end">Mínimo</th></tr></thead>
-                            <tbody>
-                            @foreach (var a in Model.Alertas)
-                            {
-                                <tr>
-                                    <td>@a.Item!.Nome</td>
-                                    <td class="text-end text-danger fw-semibold">@a.QuantidadeAtual @a.Item.UnidadeMedida</td>
-                                    <td class="text-end">@a.QuantidadeMinima</td>
-                                </tr>
-                            }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
+<div class="row g-3 mb-3">
     <div class="col-lg-7">
         <div class="card h-100">
-            <div class="card-header bg-white fw-semibold d-flex align-items-center gap-2">
-                <i class="bi bi-clock-history" style="color: var(--marca-600)" aria-hidden="true"></i> Últimas movimentações
-                <a asp-controller="Estoque" asp-action="Index" asp-route-aba="movimentacoes" class="ms-auto small fw-semibold" style="font-family: var(--bs-font-sans-serif)">Ver todas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+            <div class="card-header d-flex align-items-center gap-2">
+                Itens abaixo do mínimo
+                @if (Model.Alertas.Count > 0) { <span class="badge text-bg-danger">@Model.Alertas.Count</span> }
             </div>
-            <div class="card-body p-0">
-                @if (Model.UltimasMovimentacoes.Count == 0)
-                {
-                    <p class="text-muted p-3 mb-0">Nenhuma movimentação registrada.</p>
-                }
-                else
-                {
-                    <div class="table-responsive">
-                        <table class="table mb-0">
-                            <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th class="text-end">Qtd.</th><th>Status</th></tr></thead>
-                            <tbody>
-                            @foreach (var m in Model.UltimasMovimentacoes)
-                            {
-                                <tr class="@(m.Status == StatusMovimentacao.Cancelada ? "text-decoration-line-through text-muted" : "")">
-                                    <td class="text-nowrap">@Formatos.Data(m.DataMovimentacao)</td>
-                                    <td><span class="badge @(m.EhEntrada ? "badge-entrada" : "badge-saida")">@TiposMovimentacao.Rotulo(m.TipoMovimentacao)</span></td>
-                                    <td>@m.Item?.Nome</td>
-                                    <td class="text-end">@(m.EhEntrada ? "+" : "−")@m.Quantidade</td>
-                                    <td class="small">@m.Status</td>
-                                </tr>
-                            }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            </div>
+            @if (Model.Alertas.Count == 0)
+            {
+                <p class="vazio">Nenhum item abaixo do mínimo nesta unidade.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead><tr><th>Item</th><th class="text-end">Atual</th><th class="text-end">Mínimo</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var a in Model.Alertas)
+                        {
+                            <tr>
+                                <td>@a.Item!.Nome</td>
+                                <td class="text-end text-danger fw-semibold text-nowrap">@a.QuantidadeAtual @a.Item.UnidadeMedida</td>
+                                <td class="text-end">@a.QuantidadeMinima</td>
+                                <td class="text-end text-nowrap">
+                                    <a asp-controller="Estoque" asp-action="Index" asp-route-busca="@a.Item.Nome">Ver no estoque</a>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
         </div>
     </div>
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header">Resumo da unidade</div>
+            <dl class="resumo">
+                <div>
+                    <dt>Itens em estoque <small>@Model.ItensDistintos produtos diferentes</small></dt>
+                    <dd>@Model.ItensEmEstoque</dd>
+                </div>
+                <div><dt>Doações recebidas</dt><dd>@Model.DoacoesRecebidas</dd></div>
+                <div><dt>Doações realizadas</dt><dd>@Model.DoacoesRealizadas</dd></div>
+                <div><dt>Beneficiários</dt><dd>@Model.Beneficiarios</dd></div>
+            </dl>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex align-items-center gap-2">
+        Últimas movimentações
+        <a asp-controller="Estoque" asp-action="Index" asp-route-aba="movimentacoes" class="ms-auto fw-normal">Ver todas</a>
+    </div>
+    @if (Model.UltimasMovimentacoes.Count == 0)
+    {
+        <p class="vazio">Nenhuma movimentação registrada.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th class="text-end">Qtd.</th><th>Responsável</th></tr></thead>
+                <tbody>
+                @foreach (var m in Model.UltimasMovimentacoes)
+                {
+                    var cancelada = m.Status == StatusMovimentacao.Cancelada;
+                    <tr class="@(cancelada ? "text-muted" : "")">
+                        <td class="text-nowrap">@Formatos.Data(m.DataMovimentacao)</td>
+                        <td><span class="badge @(m.EhEntrada ? "badge-entrada" : "badge-saida")">@TiposMovimentacao.Rotulo(m.TipoMovimentacao)</span></td>
+                        <td>
+                            @m.Item?.Nome
+                            @if (cancelada) { <span class="badge text-bg-secondary ms-1">Cancelada</span> }
+                        </td>
+                        <td class="text-end text-nowrap">@(m.EhEntrada ? "+" : "−")@m.Quantidade @m.Item?.UnidadeMedida</td>
+                        <td>@m.Responsavel?.Nome</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
