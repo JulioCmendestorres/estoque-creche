@@ -41,7 +41,7 @@
 
 <div class="card">
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 tabela-cartoes">
             <thead class="table-light">
             <tr>
                 <th>Código</th><th>Nome</th><th>Categoria</th><th>Unid.</th>
@@ -51,25 +51,28 @@
             <tbody>
             @if (Model.Itens.Count == 0)
             {
-                <tr><td colspan="9" class="text-center text-muted py-4">Nenhum item encontrado.</td></tr>
+                <tr><td colspan="9" class="text-center text-muted py-4">
+                    <p class="mb-2">Nenhum item encontrado.</p>
+                    @if (podeEditar) { <a asp-action="Criar" class="btn btn-primary">Cadastrar um item</a> }
+                </td></tr>
             }
             @foreach (var l in Model.Itens)
             {
                 <tr class="@(l.Item.Ativo ? "" : "text-muted")">
-                    <td class="small text-nowrap">@l.Item.CodigoInterno</td>
-                    <td>
+                    <td data-rotulo="Código" class="small text-nowrap">@l.Item.CodigoInterno</td>
+                    <td class="celula-titulo">
                         @l.Item.Nome
                         @if (!l.Item.Ativo) { <span class="badge text-bg-secondary ms-1" title="Inativo no catálogo: vale para todas as unidades">inativo em todas</span> }
                     </td>
-                    <td>@l.Item.Categoria?.Nome</td>
-                    <td>@l.Item.UnidadeMedida</td>
-                    <td class="text-end">@(l.Item.PrecoEstimado is decimal p ? Formatos.Moeda(p) : "—")</td>
-                    <td class="text-end @(l.Alerta ? "text-danger fw-semibold" : "")">
+                    <td data-rotulo="Categoria">@l.Item.Categoria?.Nome</td>
+                    <td data-rotulo="Unidade">@l.Item.UnidadeMedida</td>
+                    <td data-rotulo="Preço estimado" class="text-end">@(l.Item.PrecoEstimado is decimal p ? Formatos.Moeda(p) : "—")</td>
+                    <td data-rotulo="Saldo" class="text-end @(l.Alerta ? "text-danger fw-semibold" : "")">
                         @l.Saldo
-                        @if (l.Alerta) { <i class="bi bi-exclamation-triangle-fill" title="Abaixo do mínimo"></i> }
+                        @if (l.Alerta) { <i class="bi bi-exclamation-triangle-fill" title="Abaixo do mínimo" role="img" aria-label="Abaixo do mínimo"></i> }
                     </td>
-                    <td class="text-end">@l.Minimo</td>
-                    <td class="text-nowrap">
+                    <td data-rotulo="Mínimo" class="text-end">@l.Minimo</td>
+                    <td data-rotulo="Nesta unidade" class="text-nowrap">
                         @if (!l.Item.Ativo)
                         {
                             <span class="text-muted small">—</span>
@@ -89,14 +92,14 @@
                             }
                         }
                     </td>
-                    <td class="text-end text-nowrap">
+                    <td class="text-end text-nowrap celula-acoes @(podeEditar ? "" : "celula-vazia")">
                         @if (podeEditar)
                         {
-                            <a asp-action="Editar" asp-route-id="@l.Item.Id" class="btn btn-sm btn-outline-secondary" title="Editar"><i class="bi bi-pencil"></i></a>
+                            <a asp-action="Editar" asp-route-id="@l.Item.Id" class="btn btn-sm btn-outline-secondary" title="Editar" aria-label="Editar @l.Item.Nome"><i class="bi bi-pencil" aria-hidden="true"></i></a>
                             <form asp-action="AlterarStatus" asp-route-id="@l.Item.Id" method="post" class="d-inline"
                                   data-confirmar="@(l.Item.Ativo ? $"Inativar \"{l.Item.Nome}\" em TODAS as unidades? Só é possível com saldo zerado em todas." : $"Reativar \"{l.Item.Nome}\" no catálogo?")">
                                 <input type="hidden" name="ativo" value="@(!l.Item.Ativo ? "true" : "false")" />
-                                <button class="btn btn-sm @(l.Item.Ativo ? "btn-outline-danger" : "btn-outline-success")" title="@(l.Item.Ativo ? "Inativar em todas as unidades" : "Reativar no catálogo")">
+                                <button class="btn btn-sm @(l.Item.Ativo ? "btn-outline-danger" : "btn-outline-success")" title="@(l.Item.Ativo ? "Inativar em todas as unidades" : "Reativar no catálogo")" aria-label="@(l.Item.Ativo ? $"Inativar {l.Item.Nome} em todas as unidades" : $"Reativar {l.Item.Nome} no catálogo")">
                                     <i class="bi @(l.Item.Ativo ? "bi-trash" : "bi-arrow-counterclockwise")"></i>
                                 </button>
                             </form>

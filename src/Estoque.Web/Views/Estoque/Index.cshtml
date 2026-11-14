@@ -33,27 +33,46 @@
     </form>
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover mb-0 tabela-cartoes">
                 <thead class="table-light">
                 <tr><th>Item</th><th>Categoria</th><th class="text-end">Quantidade</th><th class="text-end">Mínimo</th><th class="text-end">Valor em estoque</th><th>Situação</th></tr>
                 </thead>
                 <tbody>
                 @if (Model.Saldos.Count == 0)
                 {
-                    <tr><td colspan="6" class="text-center text-muted py-4">Nenhum item com estoque nesta unidade. Registre uma entrada para começar.</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted py-4">
+                        @if (!string.IsNullOrWhiteSpace(Model.Busca))
+                        {
+                            <p class="mb-2">Nenhum item encontrado para "@Model.Busca".</p>
+                            <a asp-action="Index" asp-route-aba="estoque" class="btn btn-outline-secondary">Limpar busca</a>
+                        }
+                        else
+                        {
+                            <p class="mb-2">Ainda não há itens com estoque nesta unidade.</p>
+                            @if (podeEditar)
+                            {
+                                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalEntrada">Registrar a primeira entrada</button>
+                            }
+                        }
+                    </td></tr>
                 }
                 @foreach (var s in Model.Saldos)
                 {
                     <tr>
-                        <td>@s.Item!.Nome <span class="text-muted small d-block">@s.Item.CodigoInterno</span></td>
-                        <td>@s.Item.Categoria?.Nome</td>
-                        <td class="text-end">@s.QuantidadeAtual @s.Item.UnidadeMedida</td>
-                        <td class="text-end">@s.QuantidadeMinima</td>
-                        <td class="text-end">@Formatos.Moeda(s.ValorTotalEstoque)</td>
-                        <td>
-                            @if (s.AbaixoDoMinimo)
+                        <td class="celula-titulo">@s.Item!.Nome <span class="text-muted small d-block fw-normal">@s.Item.CodigoInterno</span></td>
+                        <td data-rotulo="Categoria">@s.Item.Categoria?.Nome</td>
+                        <td data-rotulo="Quantidade" class="text-end">@s.QuantidadeAtual @s.Item.UnidadeMedida</td>
+                        <td data-rotulo="Mínimo" class="text-end">@s.QuantidadeMinima</td>
+                        <td data-rotulo="Valor em estoque" class="text-end">@Formatos.Moeda(s.ValorTotalEstoque)</td>
+                        <td data-rotulo="Situação">
+                            @* Três níveis, sempre com ícone e texto além da cor *@
+                            @if (s.QuantidadeAtual == 0)
                             {
-                                <span class="badge text-bg-danger"><i class="bi bi-exclamation-triangle"></i> Estoque baixo</span>
+                                <span class="badge text-bg-danger"><i class="bi bi-x-circle" aria-hidden="true"></i> Sem estoque</span>
+                            }
+                            else if (s.AbaixoDoMinimo)
+                            {
+                                <span class="badge badge-aviso"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Estoque baixo</span>
                             }
                             else
                             {
@@ -99,7 +118,7 @@ else
     </form>
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-hover mb-0">
+            <table class="table table-hover mb-0 tabela-cartoes">
                 <thead class="table-light">
                 <tr><th>Número</th><th>Data</th><th>Tipo</th><th>Item</th><th class="text-end">Qtd.</th><th class="text-end">Valor total</th><th>Origem / destino</th><th>Responsável</th><th><span class="visually-hidden">Situação</span></th><th><span class="visually-hidden">Ações</span></th></tr>
                 </thead>
@@ -112,30 +131,30 @@ else
                 {
                     var cancelada = m.Status == StatusMovimentacao.Cancelada;
                     <tr class="@(cancelada ? "text-muted" : "")">
-                        <td class="small text-nowrap">@m.NumeroMovimentacao</td>
-                        <td class="text-nowrap">@Formatos.Data(m.DataMovimentacao)</td>
-                        <td><span class="badge @(m.EhEntrada ? "badge-entrada" : "badge-saida")">@TiposMovimentacao.Rotulo(m.TipoMovimentacao)</span></td>
-                        <td>@m.Item?.Nome</td>
-                        <td class="text-end text-nowrap">@(m.EhEntrada ? "+" : "−")@m.Quantidade @m.Item?.UnidadeMedida</td>
-                        <td class="text-end text-nowrap">@Formatos.Moeda(m.ValorTotal)</td>
-                        <td class="small">
+                        <td data-rotulo="Número" class="small text-nowrap">@m.NumeroMovimentacao</td>
+                        <td data-rotulo="Data" class="text-nowrap">@Formatos.Data(m.DataMovimentacao)</td>
+                        <td data-rotulo="Tipo"><span class="badge @(m.EhEntrada ? "badge-entrada" : "badge-saida")">@TiposMovimentacao.Rotulo(m.TipoMovimentacao)</span></td>
+                        <td class="celula-titulo">@m.Item?.Nome</td>
+                        <td data-rotulo="Quantidade" class="text-end text-nowrap">@(m.EhEntrada ? "+" : "−")@m.Quantidade @m.Item?.UnidadeMedida</td>
+                        <td data-rotulo="Valor total" class="text-end text-nowrap">@Formatos.Moeda(m.ValorTotal)</td>
+                        <td data-rotulo="Origem / destino" class="small">
                             @if (m.EhEntrada) { @(m.Parceiro?.Nome ?? (m.TipoMovimentacao == TiposMovimentacao.Compra ? "Não informado" : "Anônimo")) }
                             else if (m.Beneficiario is not null) { @m.Beneficiario }
                             else { <span class="text-muted">—</span> }
                         </td>
-                        <td class="small">@m.Responsavel?.Nome</td>
-                        <td>
+                        <td data-rotulo="Responsável" class="small">@m.Responsavel?.Nome</td>
+                        <td data-rotulo="Situação" class="@(cancelada || !string.IsNullOrEmpty(m.Observacoes) ? "" : "celula-vazia")">
                             @if (cancelada) { <span class="badge text-bg-secondary">Cancelada</span> }
                             @if (!string.IsNullOrEmpty(m.Observacoes))
                             {
                                 <i class="bi bi-chat-left-text text-muted ms-1" title="@m.Observacoes" role="img" aria-label="Observação: @m.Observacoes"></i>
                             }
                         </td>
-                        <td class="text-end">
+                        <td class="text-end celula-acoes @(podeCancelar && m.Status == StatusMovimentacao.Processada ? "" : "celula-vazia")">
                             @if (podeCancelar && m.Status == StatusMovimentacao.Processada)
                             {
                                 <button class="btn btn-sm btn-outline-danger" title="Cancelar (estornar)" aria-label="Cancelar movimentação @m.NumeroMovimentacao" data-bs-toggle="modal" data-bs-target="#modalCancelar"
-                                        data-id="@m.Id" data-numero="@m.NumeroMovimentacao"><i class="bi bi-x-circle"></i></button>
+                                        data-id="@m.Id" data-numero="@m.NumeroMovimentacao"><i class="bi bi-x-circle" aria-hidden="true"></i><span class="d-md-none">Cancelar</span></button>
                             }
                         </td>
                     </tr>
@@ -160,7 +179,7 @@ else
                 <div class="modal-body">
                     @if (Model.ModalAberto == "entrada")
                     {
-                        <div asp-validation-summary="All" class="alert alert-danger py-2 small"></div>
+                        <div asp-validation-summary="All" class="alert alert-danger py-2 small" role="alert"></div>
                     }
                     <div class="row g-3">
                         <div class="col-6 col-md-3">
@@ -235,7 +254,7 @@ else
                 <div class="modal-body">
                     @if (Model.ModalAberto == "saida")
                     {
-                        <div asp-validation-summary="All" class="alert alert-danger py-2 small"></div>
+                        <div asp-validation-summary="All" class="alert alert-danger py-2 small" role="alert"></div>
                     }
                     <div class="row g-3">
                         <div class="col-md-8">

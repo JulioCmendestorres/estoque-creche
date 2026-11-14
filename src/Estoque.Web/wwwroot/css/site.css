@@ -234,6 +234,32 @@ a { text-underline-offset: .18em; }
 .table-light { --bs-table-bg: var(--superficie-2); --bs-table-color: var(--tinta-2); --bs-table-border-color: var(--borda); }
 .table-responsive { border-radius: inherit; }
 
+/* No celular a tabela vira uma lista de cartões: o título em destaque e cada célula como "rótulo: valor".
+   O rótulo vem de data-rotulo; células sem conteúdo levam .celula-vazia e somem. */
+@media (max-width: 767.98px) {
+    .tabela-cartoes thead {
+        position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0);
+    }
+    .tabela-cartoes, .tabela-cartoes tbody { display: block; width: 100%; }
+    .tabela-cartoes tr { display: flex; flex-direction: column; padding: .8rem 1rem; border-bottom: 1px solid var(--borda); }
+    .tabela-cartoes tbody tr:last-child { border-bottom: 0; }
+    .tabela-cartoes > tbody > tr > td {
+        display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+        padding: .2rem 0; border: 0; text-align: right; white-space: normal !important; font-size: 1rem;
+    }
+    .tabela-cartoes td[data-rotulo]::before {
+        content: attr(data-rotulo); flex-shrink: 0;
+        color: var(--apagado); font-size: .875rem; font-weight: 400; text-align: left;
+    }
+    .tabela-cartoes > tbody > tr > td.celula-titulo {
+        display: block; order: -1; text-align: left; font-weight: 600; font-size: 1.05rem; padding-bottom: .3rem;
+    }
+    .tabela-cartoes > tbody > tr > td.celula-acoes { justify-content: flex-end; gap: .5rem; padding-top: .5rem; }
+    .tabela-cartoes > tbody > tr > td.celula-vazia { display: none; }
+    .tabela-cartoes > tbody > tr > td[colspan] { display: block; text-align: center; }
+    .tabela-cartoes .btn-sm { min-height: 44px; min-width: 44px; }
+}
+
 /* ---------- Selos (badges) ---------- */
 .badge { font-weight: 600; border-radius: 4px; padding: .35em .6em; }
 /* Tipo de movimentação: ponto colorido + texto, sem fundo */
@@ -246,7 +272,8 @@ a { text-underline-offset: .18em; }
 }
 .badge-entrada { color: var(--entrada); }
 .badge-saida { color: var(--saida); }
-.badge-global { background: var(--aviso-bg); color: var(--aviso); border: 1px solid #f0d58a; }
+.badge-global, .badge-aviso { background: var(--aviso-bg); color: var(--aviso); border: 1px solid #e3c36c; }
+.texto-aviso { color: var(--aviso); }
 .text-bg-light { background: var(--superficie-2) !important; color: var(--tinta-2) !important; }
 .badge.border { border-color: var(--borda) !important; }
 
@@ -260,6 +287,9 @@ a { text-underline-offset: .18em; }
     display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
     transition: background-color .15s ease, border-color .15s ease, color .15s ease;
 }
+/* Enviando: o botão fica travado e mostra o giro (site.js) */
+.btn[aria-busy="true"] { cursor: progress; }
+.btn .spinner-border { --bs-spinner-width: 1em; --bs-spinner-height: 1em; --bs-spinner-border-width: .15em; }
 .btn-sm { --bs-btn-border-radius: 4px; --bs-btn-padding-x: .6rem; --bs-btn-padding-y: .3rem; min-height: 36px; min-width: 36px; }
 .btn-link { min-height: 0; min-width: 0; }
 .btn-primary {

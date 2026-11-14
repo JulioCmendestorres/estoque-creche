@@ -251,11 +251,68 @@ document.addEventListener("DOMContentLoaded", () => {
         if (el) bootstrap.Modal.getOrCreateInstance(el).show();
     }
 
-    // Formulários com data-confirmar="mensagem" pedem confirmação antes de enviar (vazio = não pergunta)
+    // Formulários com data-confirmar="mensagem" pedem confirmação antes de enviar (vazio = não pergunta).
+    // A pergunta aparece no modal #modalConfirmar; sem ele (ou sem o Bootstrap), cai no confirm do navegador.
+    const modalConfirmar = document.getElementById("modalConfirmar");
+    let aguardando = null; // { form, submitter } esperando a resposta
     document.querySelectorAll("form[data-confirmar]").forEach(f => f.addEventListener("submit", ev => {
         const msg = f.dataset.confirmar;
-        if (msg && !window.confirm(msg)) ev.preventDefault();
+        if (!msg || f.dataset.confirmado === "1") return;
+        if (!modalConfirmar || !window.bootstrap) {
+            if (!window.confirm(msg)) ev.preventDefault();
+            return;
+        }
+        ev.preventDefault();
+        aguardando = { form: f, submitter: ev.submitter };
+        modalConfirmar.querySelector("[data-mensagem]").textContent = msg;
+        bootstrap.Modal.getOrCreateInstance(modalConfirmar).show();
     }));
+    if (modalConfirmar) {
+        modalConfirmar.querySelector("[data-confirmar-sim]").addEventListener("click", () => {
+            if (!aguardando) return;
+            const { form, submitter } = aguardando;
+            aguardando = null;
+            form.dataset.confirmado = "1";
+            bootstrap.Modal.getOrCreateInstance(modalConfirmar).hide();
+            form.requestSubmit(submitter && submitter.isConnected ? submitter : undefined);
+        });
+        // Fechou sem confirmar: o foco volta para o botão que abriu a pergunta
+        modalConfirmar.addEventListener("hidden.bs.modal", () => {
+            if (aguardando && aguardando.submitter) aguardando.submitter.focus();
+            aguardando = null;
+        });
+    }
+
+    // Envio em andamento: trava o botão e mostra o giro, para um clique duplo não gravar duas vezes.
+    // Escuta no document (depois das validações de cada formulário); se alguma cancelou o envio, nada muda.
+    document.addEventListener("submit", ev => {
+        const f = ev.target;
+        if (!(f instanceof HTMLFormElement) || f.method.toLowerCase() !== "post") return;
+        if (ev.defaultPrevented) return;
+        if (f.dataset.enviando === "1") { ev.preventDefault(); return; }
+        f.dataset.enviando = "1";
+        const btn = ev.submitter || f.querySelector('button[type="submit"], button:not([type])');
+        if (!btn) return;
+        btn.setAttribute("aria-busy", "true");
+        const giro = document.createElement("span");
+        giro.className = "spinner-border";
+        giro.setAttribute("aria-hidden", "true");
+        btn.prepend(giro);
+        setTimeout(() => { btn.disabled = true; }, 0); // depois do envio: botão desabilitado antes não iria no POST
+    });
+    // Voltou pela seta do navegador (página guardada em cache): destrava tudo
+    window.addEventListener("pageshow", ev => {
+        if (!ev.persisted) return;
+        document.querySelectorAll('form[data-enviando="1"]').forEach(f => {
+            delete f.dataset.enviando;
+            delete f.dataset.confirmado;
+            f.querySelectorAll('[aria-busy="true"]').forEach(b => {
+                b.removeAttribute("aria-busy");
+                b.disabled = false;
+                b.querySelector(".spinner-border")?.remove();
+            });
+        });
+    });
 
     // Botão de copiar: data-copiar="id do elemento com o texto"
     document.querySelectorAll("[data-copiar]").forEach(b => b.addEventListener("click", async () => {

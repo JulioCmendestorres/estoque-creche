@@ -29,7 +29,7 @@
                         {
                             <tr>
                                 <td><a asp-controller="Estoque" asp-action="Index" asp-route-busca="@a.Item!.Nome" title="Ver no estoque">@a.Item!.Nome</a></td>
-                                <td class="text-end text-danger fw-semibold text-nowrap">@a.QuantidadeAtual @a.Item.UnidadeMedida</td>
+                                <td class="text-end fw-semibold text-nowrap @(a.QuantidadeAtual == 0 ? "text-danger" : "texto-aviso")">@a.QuantidadeAtual @a.Item.UnidadeMedida</td>
                                 <td class="text-end">@a.QuantidadeMinima</td>
                             </tr>
                         }
@@ -67,21 +67,21 @@
     else
     {
         <div class="table-responsive">
-            <table class="table mb-0">
+            <table class="table mb-0 tabela-cartoes">
                 <thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th class="text-end">Qtd.</th><th>Responsável</th></tr></thead>
                 <tbody>
                 @foreach (var m in Model.UltimasMovimentacoes)
                 {
                     var cancelada = m.Status == StatusMovimentacao.Cancelada;
                     <tr class="@(cancelada ? "text-muted" : "")">
-                        <td class="text-nowrap">@Formatos.Data(m.DataMovimentacao)</td>
-                        <td><span class="badge @(m.EhEntrada ? "badge-entrada" : "badge-saida")">@TiposMovimentacao.Rotulo(m.TipoMovimentacao)</span></td>
-                        <td>
+                        <td data-rotulo="Data" class="text-nowrap">@Formatos.Data(m.DataMovimentacao)</td>
+                        <td data-rotulo="Tipo"><span class="badge @(m.EhEntrada ? "badge-entrada" : "badge-saida")">@TiposMovimentacao.Rotulo(m.TipoMovimentacao)</span></td>
+                        <td class="celula-titulo">
                             @m.Item?.Nome
                             @if (cancelada) { <span class="badge text-bg-secondary ms-1">Cancelada</span> }
                         </td>
-                        <td class="text-end text-nowrap">@(m.EhEntrada ? "+" : "−")@m.Quantidade @m.Item?.UnidadeMedida</td>
-                        <td>@m.Responsavel?.Nome</td>
+                        <td data-rotulo="Quantidade" class="text-end text-nowrap">@(m.EhEntrada ? "+" : "−")@m.Quantidade @m.Item?.UnidadeMedida</td>
+                        <td data-rotulo="Responsável">@m.Responsavel?.Nome</td>
                     </tr>
                 }
                 </tbody>

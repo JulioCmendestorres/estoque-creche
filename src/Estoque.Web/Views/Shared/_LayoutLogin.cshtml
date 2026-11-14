@@ -12,5 +12,7 @@
 <body class="login-bg">
     @* Login, erro, acesso negado e status: conteúdo centralizado *@
     <main class="login-wrap">@RenderBody()</main>
+    @* site.js não depende do Bootstrap aqui: só trava o botão durante o envio *@
+    <script src="~/js/site.js" asp-append-version="true"></script>
 </body>
 </html>
