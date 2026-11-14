@@ -6,7 +6,7 @@ public interface ITenantEntity
     int TenantId { get; set; }
 }
 
-/// <summary>Entidade cujo dado é por unidade (matriz/filial): filtrada também pela unidade atual.</summary>
+/// <summary>Entidade cujo dado é por unidade: filtrada também pela unidade atual.</summary>
 public interface IUnidadeEntity : ITenantEntity
 {
     int UnidadeId { get; set; }
@@ -26,15 +26,8 @@ public class Unidade : ITenantEntity
     public int Id { get; set; }
     public int TenantId { get; set; }
     public string Nome { get; set; } = "";
-    public string Tipo { get; set; } = TiposUnidade.Filial;
     public bool Ativo { get; set; } = true;
     public DateTime CriadoEm { get; set; }
-}
-
-public static class TiposUnidade
-{
-    public const string Matriz = "matriz";
-    public const string Filial = "filial";
 }
 
 public class Usuario : ITenantEntity

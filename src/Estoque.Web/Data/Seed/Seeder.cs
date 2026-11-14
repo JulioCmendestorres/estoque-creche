@@ -97,9 +97,9 @@ public sealed class Seeder(string dbConnectionString, SeedOptions opt, ILogger l
             var tenantId = await Inserir(conn, tx, "INSERT INTO tenants (nome) VALUES (@nome);", ct,
                 P("@nome", NomeTenant));
             var matrizId = await Inserir(conn, tx,
-                "INSERT INTO unidades (tenant_id, nome, tipo) VALUES (@t, N'Matriz', 'matriz');", ct, P("@t", tenantId));
+                "INSERT INTO unidades (tenant_id, nome) VALUES (@t, N'Matriz');", ct, P("@t", tenantId));
             var filialId = await Inserir(conn, tx,
-                "INSERT INTO unidades (tenant_id, nome, tipo) VALUES (@t, N'Filial', 'filial');", ct, P("@t", tenantId));
+                "INSERT INTO unidades (tenant_id, nome) VALUES (@t, N'Filial');", ct, P("@t", tenantId));
 
             var categorias = new Dictionary<string, int>();
             foreach (var c in Categorias)

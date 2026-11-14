@@ -47,7 +47,7 @@
                         <option value="0">Escolha…</option>
                         @foreach (var u in Model.Unidades)
                         {
-                            <option value="@u.Id">@u.Nome (@(u.Tipo == TiposUnidade.Matriz ? "Matriz" : "Filial"))@(u.Ativo ? "" : " — inativa")</option>
+                            <option value="@u.Id">@u.Nome@(u.Ativo ? "" : " — inativa")</option>
                         }
                     </select>
                     <span asp-validation-for="Input.UnidadeId" class="text-danger small"></span>

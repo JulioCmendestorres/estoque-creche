@@ -79,8 +79,8 @@ public static class Sql
     {
         var sufixo = Guid.NewGuid().ToString("N")[..8];
         var t = await Id(c, "INSERT INTO tenants (nome) VALUES (@n)", ("@n", "T " + sufixo));
-        var m = await Id(c, "INSERT INTO unidades (tenant_id, nome, tipo) VALUES (@t, 'Matriz', 'matriz')", ("@t", t));
-        var f = await Id(c, "INSERT INTO unidades (tenant_id, nome, tipo) VALUES (@t, 'Filial', 'filial')", ("@t", t));
+        var m = await Id(c, "INSERT INTO unidades (tenant_id, nome) VALUES (@t, 'Matriz')", ("@t", t));
+        var f = await Id(c, "INSERT INTO unidades (tenant_id, nome) VALUES (@t, 'Filial')", ("@t", t));
         var u = await Id(c, "INSERT INTO usuarios (tenant_id, nome, email, senha, unidade_id, master) VALUES (@t, 'U', @e, 'AQAAAAhashFicticio', @m, 1)",
             ("@t", t), ("@e", $"u{sufixo}@teste.local"), ("@m", m));
         await Exec(c, "INSERT INTO unidades_medida (tenant_id, codigo, descricao) VALUES (@t, 'pacote', 'Pacote'), (@t, 'kg', 'Quilograma')",

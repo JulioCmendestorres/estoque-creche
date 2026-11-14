@@ -156,7 +156,7 @@ public class UsuariosController(EstoqueDbContext db, IPasswordHasher<Usuario> ha
         Input = input,
         Perfis = await db.Perfis.Where(p => p.Ativo || p.Id == input.PerfilId).OrderBy(p => p.Nome).ToListAsync(),
         Unidades = await db.Unidades.Where(u => u.Ativo || u.Id == input.UnidadeId)
-            .OrderBy(u => u.Tipo == TiposUnidade.Matriz ? 0 : 1).ThenBy(u => u.Nome).ToListAsync(),
+            .OrderBy(u => u.Nome).ToListAsync(),
     };
 
     private static string Normalizar(string? email) => (email ?? "").Trim().ToLowerInvariant();

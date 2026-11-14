@@ -151,13 +151,15 @@ public class RegrasBancoTests(BancoFixture db)
     }
 
     [Fact]
-    public async Task Segunda_matriz_no_mesmo_tenant_falha()
+    public async Task Tenant_aceita_varias_unidades_mas_nao_dois_nomes_iguais()
     {
         await using var c = await db.AbrirAsync();
         var s = await NovoTenant(c);
+        await Exec(c, "INSERT INTO unidades (tenant_id, nome) VALUES (@t, 'Terceira'), (@t, 'Quarta')", ("@t", s.Tenant));   // D-46
+
         var ex = await Assert.ThrowsAsync<SqlException>(() =>
-            Exec(c, "INSERT INTO unidades (tenant_id, nome, tipo) VALUES (@t, 'Outra matriz', 'matriz')", ("@t", s.Tenant)));
-        Assert.Equal(2601, ex.Number);
+            Exec(c, "INSERT INTO unidades (tenant_id, nome) VALUES (@t, 'Matriz')", ("@t", s.Tenant)));
+        Assert.Equal(2627, ex.Number);
     }
 
     [Fact]

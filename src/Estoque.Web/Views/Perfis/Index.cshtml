@@ -8,7 +8,7 @@
 </div>
 <p class="text-muted small" style="max-width: 860px">
     O perfil define o que cada pessoa pode fazer. Todos os usuários consultam o estoque, as movimentações e o painel da própria unidade.
-    Permissões marcadas com <span class="badge badge-global">matriz e filial</span> mexem em dados das duas unidades: dê só a pessoas de confiança.
+    Permissões marcadas com <span class="badge badge-global">todas as unidades</span> mexem em dados de todas elas: dê só a pessoas de confiança.
 </p>
 <div class="row g-3">
     @foreach (var l in Model)
@@ -32,7 +32,7 @@
                         {
                             <li>
                                 <i class="bi bi-check2 text-success"></i> @d.Nome
-                                @if (d.Global) { <span class="badge badge-global">matriz e filial</span> }
+                                @if (d.Global) { <span class="badge badge-global">todas as unidades</span> }
                             </li>
                         }
                     </ul>

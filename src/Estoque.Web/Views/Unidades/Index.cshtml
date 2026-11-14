@@ -1,0 +1,83 @@
+@model List<UnidadeLinha>
+@{
+    ViewData["Title"] = "Unidades";
+}
+<div class="page-header">
+    <h1>Unidades</h1>
+    <a asp-action="Criar" class="btn btn-primary ms-auto"><i class="bi bi-plus-lg" aria-hidden="true"></i> Nova unidade</a>
+</div>
+<p class="text-muted small" style="max-width: 860px">
+    Cada unidade tem o próprio estoque e as próprias movimentações. Itens, categorias, unidades de medida e fornecedores
+    são os mesmos para todas. Só o <strong>master</strong> cria, renomeia e desativa unidades.
+</p>
+<div class="card" style="max-width: 980px">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0 tabela-cartoes">
+            <thead class="table-light">
+            <tr><th>Nome</th><th class="text-end">Usuários ativos</th><th class="text-end">Itens com saldo</th><th>Situação</th><th><span class="visually-hidden">Ações</span></th></tr>
+            </thead>
+            <tbody>
+            @foreach (var l in Model)
+            {
+                var u = l.Unidade;
+                <tr class="@(u.Ativo ? "" : "text-muted")">
+                    <td class="celula-titulo">
+                        @u.Nome
+                        @if (l.Atual) { <span class="badge text-bg-light border ms-1">você está aqui</span> }
+                    </td>
+                    <td data-rotulo="Usuários ativos" class="text-end">@l.UsuariosAtivos</td>
+                    <td data-rotulo="Itens com saldo" class="text-end">@l.ItensComSaldo</td>
+                    <td data-rotulo="Situação">@(u.Ativo ? "Ativa" : "Desativada")</td>
+                    <td class="text-end text-nowrap celula-acoes">
+                        <a asp-action="Editar" asp-route-id="@u.Id" class="btn btn-sm btn-outline-secondary">Renomear</a>
+                        @if (u.Ativo)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalDesativarUnidade"
+                                    data-id="@u.Id" data-nome="@u.Nome">Desativar</button>
+                        }
+                        else
+                        {
+                            <form asp-action="Reativar" asp-route-id="@u.Id" method="post" class="d-inline">
+                                <button class="btn btn-sm btn-outline-success">Reativar</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+<p class="text-muted small mt-2" style="max-width: 860px">
+    Não existe exclusão: as movimentações e a auditoria de uma unidade precisam continuar consultáveis. Desativar tira a unidade
+    do seletor e do cadastro de usuários, e pode ser desfeito a qualquer momento.
+</p>
+
+@* Confirmação no estilo "digite o nome": o botão só libera quando o texto é igual ao nome da unidade *@
+<div class="modal fade" id="modalDesativarUnidade" tabindex="-1" aria-labelledby="tituloDesativarUnidade" aria-hidden="true">
+    <div class="modal-dialog">
+        <form class="modal-content" asp-action="Desativar" method="post" data-confirmar-digitando>
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="tituloDesativarUnidade">Desativar a unidade <span data-nome></span></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="id" />
+                <div class="alert alert-warning small" role="note">
+                    Ninguém mais conseguirá entrar nem registrar entradas e saídas nesta unidade.
+                </div>
+                <ul class="small">
+                    <li>Só é possível com o estoque zerado e sem usuários ativos nela.</li>
+                    <li>O histórico continua nos relatórios consolidados.</li>
+                    <li>Você pode reativar a unidade depois.</li>
+                </ul>
+                <label for="confirmacaoUnidade" class="form-label">Para confirmar, digite <strong data-nome></strong></label>
+                <input id="confirmacaoUnidade" name="confirmacao" class="form-control" autocomplete="off" spellcheck="false" required />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Voltar</button>
+                <button type="submit" class="btn btn-danger" disabled>Desativar esta unidade</button>
+            </div>
+        </form>
+    </div>
+</div>

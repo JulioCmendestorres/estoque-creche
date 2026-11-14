@@ -45,6 +45,7 @@
                 @if (Acesso.Master)
                 {
                     <div class="sidebar-secao">Administração</div>
+                    <a class="nav-link @Ativo("Unidades")" asp-controller="Unidades" asp-action="Index"><i class="bi bi-building"></i> Unidades</a>
                     <a class="nav-link @Ativo("Usuarios")" asp-controller="Usuarios" asp-action="Index"><i class="bi bi-people"></i> Usuários</a>
                     <a class="nav-link @Ativo("Perfis")" asp-controller="Perfis" asp-action="Index"><i class="bi bi-shield-lock"></i> Perfis de acesso</a>
                 }

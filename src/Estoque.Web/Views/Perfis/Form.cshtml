@@ -34,14 +34,14 @@
                             <input class="form-check-input" type="checkbox" name="Permissoes" value="@d.Codigo" id="@id" checked="@marcadas.Contains(d.Codigo)" />
                             <label class="form-check-label" for="@id">
                                 @d.Nome
-                                @if (d.Global) { <span class="badge badge-global">matriz e filial</span> }
+                                @if (d.Global) { <span class="badge badge-global">todas as unidades</span> }
                                 <span class="d-block small text-muted">@d.Descricao</span>
                             </label>
                         </div>
                     }
                 </fieldset>
             }
-            <p class="small text-muted"><i class="bi bi-info-circle"></i> Usuários, perfis e a troca entre matriz e filial são exclusivos do usuário master.</p>
+            <p class="small text-muted"><i class="bi bi-info-circle"></i> Usuários, perfis, unidades e a troca de unidade são exclusivos do usuário master.</p>
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">Salvar</button>
                 <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>

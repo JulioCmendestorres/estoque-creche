@@ -17,8 +17,8 @@ public class SeletorUnidadeViewComponent(EstoqueDbContext db, ITenantContext ten
     {
         var unidades = tenant.Master
             ? await db.Unidades.Where(u => u.Ativo)
-                .Select(u => new UnidadeOpcao { Id = u.Id, Nome = u.Nome, Tipo = u.Tipo })
-                .OrderBy(u => u.Tipo == "matriz" ? 0 : 1).ThenBy(u => u.Nome)
+                .OrderBy(u => u.Nome)
+                .Select(u => new UnidadeOpcao { Id = u.Id, Nome = u.Nome })
                 .ToListAsync()
             : [];
         ViewBag.Atual = tenant.UnidadeId;

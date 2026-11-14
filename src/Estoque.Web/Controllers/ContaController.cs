@@ -65,7 +65,7 @@ public class ContaController(
         var unidade = await db.Unidades.FirstOrDefaultAsync(u => u.Id == usuario.UnidadeId && u.Ativo);
         if (unidade is null && usuario.Master)
             unidade = await db.Unidades.Where(u => u.Ativo)
-                .OrderBy(u => u.Tipo == TiposUnidade.Matriz ? 0 : 1).ThenBy(u => u.Nome).FirstOrDefaultAsync();
+                .OrderBy(u => u.Id).FirstOrDefaultAsync();   // a mais antiga
         if (unidade is null)
         {
             ModelState.AddModelError(string.Empty, "A unidade do seu cadastro está inativa. Procure o responsável pelo sistema.");

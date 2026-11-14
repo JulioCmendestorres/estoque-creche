@@ -45,11 +45,10 @@ public class EstoqueDbContext(DbContextOptions<EstoqueDbContext> options, ITenan
 
         mb.Entity<Unidade>(e =>
         {
-            e.ToTable("unidades");
+            e.ToTable("unidades", t => t.HasTrigger("trg_unidades_auditoria"));
             e.Property(x => x.Id).HasColumnName("id");
             e.Property(x => x.TenantId).HasColumnName("tenant_id");
             e.Property(x => x.Nome).HasColumnName("nome");
-            e.Property(x => x.Tipo).HasColumnName("tipo");
             e.Property(x => x.Ativo).HasColumnName("ativo");
             e.Property(x => x.CriadoEm).HasColumnName("criado_em").HasDefaultValueSql("SYSUTCDATETIME()");
             e.HasQueryFilter(x => x.TenantId == TenantAtual);

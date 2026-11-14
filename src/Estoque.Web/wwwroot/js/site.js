@@ -326,6 +326,25 @@ document.addEventListener("DOMContentLoaded", () => {
     // Relatórios: imprimir usa o CSS @media print (esconde menu e filtros)
     document.querySelectorAll("[data-imprimir]").forEach(b => b.addEventListener("click", () => window.print()));
 
+    // Confirmação "digite o nome" (desativar unidade): o modal recebe id e nome do botão que o abriu,
+    // e o botão de enviar só libera quando o texto digitado é exatamente o nome.
+    document.querySelectorAll("form[data-confirmar-digitando]").forEach(f => {
+        const modal = f.closest(".modal");
+        const campo = f.querySelector('input[name="confirmacao"]');
+        const enviar = f.querySelector('button[type="submit"]');
+        let esperado = "";
+        const conferir = () => { enviar.disabled = campo.value.trim() !== esperado; };
+        campo.addEventListener("input", conferir);
+        modal.addEventListener("show.bs.modal", ev => {
+            esperado = ev.relatedTarget.dataset.nome;
+            f.querySelector('input[name="id"]').value = ev.relatedTarget.dataset.id;
+            f.querySelectorAll("[data-nome]").forEach(e => { e.textContent = esperado; });
+            campo.value = "";
+            conferir();
+        });
+        modal.addEventListener("shown.bs.modal", () => campo.focus());
+    });
+
     // Modal de cancelamento: recebe id e número da movimentação do botão que o abriu
     const modalCancelar = document.getElementById("modalCancelar");
     if (modalCancelar) {

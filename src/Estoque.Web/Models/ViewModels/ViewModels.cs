@@ -304,8 +304,20 @@ public class UnidadeOpcao
 {
     public int Id { get; init; }
     public string Nome { get; init; } = "";
-    public string Tipo { get; init; } = "";
 }
+
+// ---------------------------------------------------------------- Unidades (D-46)
+
+public class UnidadeInput
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Informe o nome da unidade."), StringLength(100, ErrorMessage = "O nome pode ter até 100 caracteres."), Display(Name = "Nome")]
+    public string Nome { get; set; } = "";
+}
+
+/// <summary>Linha da tela de unidades, com o que impede desativar (usuários ativos e itens com saldo).</summary>
+public sealed record UnidadeLinha(Unidade Unidade, int UsuariosAtivos, int ItensComSaldo, bool Atual);
 
 /// <summary>Filtros do relatório de movimentações (E5.2). Tipo aceita um tipo específico ou os grupos "entradas"/"saidas".</summary>
 public class FiltroRelatorio
