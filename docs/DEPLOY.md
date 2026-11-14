@@ -95,12 +95,12 @@ O script faz duas perguntas:
 
 O resto é automático: o script cria as senhas do banco, o administrador inicial e o HTTPS (quando há domínio). A primeira instalação leva de 5 a 15 minutos, porque baixa as imagens e cria o banco.
 
-No final aparecem o endereço do sistema e a **senha do primeiro acesso**. **Anote essa senha agora.** Ela aparece só nesse momento.
+No final aparecem o endereço do sistema e o **acesso do master**, o único usuário com todas as permissões. **Guarde essa senha agora, em local seguro.** Ela aparece só nesse momento.
 
 - Usuário: `admin@creche.local`
 - Senha: a que apareceu na tela
 
-Ao entrar pela primeira vez, o sistema pede para trocar a senha.
+A senha gerada é longa e aleatória e continua valendo até o master trocá-la, quando quiser, em **Alterar senha** (menu do usuário, no canto superior direito).
 
 ## 4. Acessar
 

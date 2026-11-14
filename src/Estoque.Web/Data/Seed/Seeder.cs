@@ -16,7 +16,8 @@ public sealed record SeedOptions
 
 /// <summary>
 /// T3.1: roda ao final do --migrate, só se ainda não existir tenant.
-/// Sempre: tenant, Matriz, Filial, perfis padrão, admin master (trocar_senha = 1) e categorias.
+/// Sempre: tenant, Matriz, Filial, perfis padrão, o master (único, com todas as permissões) e categorias.
+/// A senha do master vem do instalador, longa e aleatória, e vale até ele trocá-la em "Alterar senha" (D-47).
 /// Com SEED_DEMO_DATA=true: itens da planilha (Apêndice A), mínimos, parceiros,
 /// um usuário por perfil (Operacional na Matriz, Visualizador na Filial) e algumas movimentações.
 /// </summary>
@@ -124,7 +125,7 @@ public sealed class Seeder(string dbConnectionString, SeedOptions opt, ILogger l
 
             // O administrador inicial é o master: único que transita entre unidades e gerencia usuários e perfis
             var adminId = await CriarUsuario(conn, tx, tenantId, "Administrador", opt.AdminEmail!,
-                hasher.HashPassword(null!, opt.AdminPassword!), perfilId: null, unidadeId: matrizId, master: true, trocarSenha: true, ct);
+                hasher.HashPassword(null!, opt.AdminPassword!), perfilId: null, unidadeId: matrizId, master: true, trocarSenha: false, ct);
 
             if (opt.DemoData)
                 await SemearDemo(conn, tx, tenantId, matrizId, filialId, adminId, categorias["Alimento"], perfis, hasher, ct);

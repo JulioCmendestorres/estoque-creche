@@ -139,9 +139,11 @@ fi
 printf '\n============================================================\n'
 printf ' Sistema no ar:  %s\n' "$URL"
 if [ "$NOVA" = "1" ]; then
-  printf '\n Primeiro acesso (o sistema pede para trocar a senha):\n'
+  printf '\n Acesso do master (único usuário com todas as permissões):\n'
   printf '   Usuário: %s\n   Senha:   %s\n' "$ADM_EMAIL" "$ADM"
-  printf '\n Anote a senha agora. Depois da troca, o valor guardado no .env deixa de valer.\n'
+  printf '\n Guarde esta senha em local seguro: ela só aparece agora.\n'
+  printf ' Ela continua valendo até o master trocá-la no sistema (menu do usuário > Alterar senha).\n'
+  printf ' Depois de uma troca, o valor guardado no .env deixa de valer.\n'
 fi
 if [ -n "$DOM" ]; then
   printf '\n O certificado HTTPS pode levar alguns minutos na primeira vez. Se não abrir:\n'

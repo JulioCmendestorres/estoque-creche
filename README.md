@@ -72,7 +72,7 @@ compose.yaml        sqlserver · migrator · web · proxy (Caddy)      compose.p
 | S13 | Volume `dataprotection` | ✔ |
 | S14 | `estoque_app` sem UPDATE/DELETE em `logs_auditoria` | ✔ verificado com `HAS_PERMS_BY_NAME` |
 | S15 | `returnUrl` local; mensagem de login genérica | ✔ |
-| S16 | Senha do admin gerada; troca obrigatória no 1º acesso | ✔ |
+| S16 | Senha do master gerada pelo instalador (longa e aleatória); troca opcional em "Alterar senha" (D-47) | ✔ |
 | S17 | HTTPS via Caddy | ✔ automático quando há domínio |
 | S24 | CSV contra *formula injection*; PDF só com o filtro autorizado | ✔ testado (consolidado só admin, limitado às unidades do usuário) |
 | S26 | LGPD: minimizar dados pessoais | parcial: **CPF de pessoa não é registrado** (só CNPJ, opcional); restante na versão completa |
