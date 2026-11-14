@@ -1,19 +1,218 @@
 @model DashboardViewModel
 @{
     ViewData["Title"] = "Painel";
-    var hoje = Tempo.Hoje.ToString("dddd, d 'de' MMMM", System.Globalization.CultureInfo.GetCultureInfo("pt-BR"));
+    var ptBr = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+    var hoje = Model.Fim.ToString("dddd, d 'de' MMMM", ptBr);
+    var nomePeriodo = Model.PeriodoDias == 365 ? "12 meses" : $"{Model.PeriodoDias} dias";
+
+    // Comparação com o período anterior de mesmo tamanho. Seta e texto em tinta neutra:
+    // subir ou cair não é bom nem ruim por si só.
+    (string Icone, string Texto) Variacao(decimal atual, decimal anterior)
+    {
+        if (anterior == 0) return atual == 0 ? ("bi-dash", "igual ao período anterior") : ("bi-arrow-up", "nada no período anterior");
+        var pct = Math.Round((atual - anterior) / anterior * 100);
+        if (pct == 0) return ("bi-dash", "igual ao período anterior");
+        return (pct > 0 ? "bi-arrow-up" : "bi-arrow-down", $"{Math.Abs(pct):0}% {(pct > 0 ? "a mais" : "a menos")} que no período anterior");
+    }
+    var vDoacoes = Variacao(Model.DoacoesRecebidas, Model.DoacoesRecebidasAnterior);
+    var vEntradas = Variacao(Model.ValorEntradas, Model.ValorEntradasAnterior);
+    var vSaidas = Variacao(Model.ValorSaidas, Model.ValorSaidasAnterior);
+
+    var totalSituacao = Model.ItensNormais + Model.ItensEstoqueBaixo + Model.ItensSemEstoque;
+    var maxTipo = Model.PorTipo.Count == 0 ? 0 : Model.PorTipo.Max(t => t.Movimentacoes);
+    var maxCategoria = Model.PorCategoria.Count == 0 ? 0m : Model.PorCategoria.Max(c => c.Valor);
+    var temMeses = Model.Meses.Any(m => m.Entradas > 0 || m.Saidas > 0);
+    string Largura(decimal valor, decimal maximo) => maximo <= 0 ? "0" : (valor / maximo * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 }
 <div class="page-header">
     <h1>Painel</h1>
-    <p class="page-subtitulo">@(char.ToUpper(hoje[0]) + hoje[1..]) · @Acesso.UnidadeNome</p>
+    <nav class="ms-auto btn-group periodo" aria-label="Período dos indicadores">
+        @foreach (var p in DashboardViewModel.Periodos)
+        {
+            <a asp-action="Index" asp-route-periodo="@p" class="btn btn-outline-secondary @(p == Model.PeriodoDias ? "active" : "")"
+               aria-current="@(p == Model.PeriodoDias ? "true" : null)">@(p == 365 ? "12 meses" : $"{p} dias")</a>
+        }
+    </nav>
+    <p class="page-subtitulo">@(char.ToUpper(hoje[0]) + hoje[1..]) · @Acesso.UnidadeNome · indicadores de @Formatos.Data(Model.Inicio) a @Formatos.Data(Model.Fim)</p>
+</div>
+
+@* ---------- Indicadores ---------- *@
+<div class="row g-3 mb-3">
+    <div class="col-6 col-xl-3">
+        <div class="card indicador h-100">
+            <div class="indicador-rotulo">Doações recebidas</div>
+            <div class="indicador-valor">@Model.DoacoesRecebidas</div>
+            <div class="indicador-nota"><i class="bi @vDoacoes.Icone" aria-hidden="true"></i> @vDoacoes.Texto</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card indicador h-100">
+            <div class="indicador-rotulo">Valor das entradas</div>
+            <div class="indicador-valor">@Formatos.Moeda(Model.ValorEntradas)</div>
+            <div class="indicador-nota"><i class="bi @vEntradas.Icone" aria-hidden="true"></i> @vEntradas.Texto</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card indicador h-100">
+            <div class="indicador-rotulo">Valor das saídas</div>
+            <div class="indicador-valor">@Formatos.Moeda(Model.ValorSaidas)</div>
+            <div class="indicador-nota"><i class="bi @vSaidas.Icone" aria-hidden="true"></i> @vSaidas.Texto</div>
+        </div>
+    </div>
+    <div class="col-6 col-xl-3">
+        <div class="card indicador h-100">
+            <div class="indicador-rotulo">Valor em estoque hoje</div>
+            <div class="indicador-valor">@Formatos.Moeda(Model.ValorEstoque)</div>
+            <div class="indicador-nota">@Model.ItensDistintos @(Model.ItensDistintos == 1 ? "produto" : "produtos") com saldo</div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-3 mb-3">
-    <div class="col-lg-7">
-        <div class="card h-100">
-            <div class="card-header d-flex align-items-center gap-2">
-                Itens abaixo do mínimo
-                @if (Model.Alertas.Count > 0) { <span class="badge text-bg-danger">@Model.Alertas.Count</span> }
+    @* ---------- Entradas e saídas por mês ---------- *@
+    <div class="col-lg-8">
+        <div class="card grafico h-100">
+            <div class="grafico-cabecalho">
+                <div>
+                    <h2>Entradas e saídas por mês</h2>
+                    <p>Valor estimado · últimos 12 meses</p>
+                </div>
+                <ul class="legenda" aria-hidden="true">
+                    <li><span class="amostra cor-entrada"></span> Entradas</li>
+                    <li><span class="amostra cor-saida"></span> Saídas</li>
+                </ul>
+            </div>
+            @if (!temMeses)
+            {
+                <p class="vazio">Nenhuma movimentação nos últimos 12 meses.</p>
+            }
+            else
+            {
+                <div class="grafico-area">
+                    <canvas id="graficoMeses" role="img" aria-label="Gráfico de colunas: valor das entradas e das saídas em cada um dos últimos 12 meses. Os números estão na tabela logo abaixo."></canvas>
+                </div>
+                <script type="application/json" id="dadosMeses">@Html.Raw(Json.Serialize(new {
+                    rotulos = Model.Meses.Select(m => m.Rotulo),
+                    entradas = Model.Meses.Select(m => m.Entradas),
+                    saidas = Model.Meses.Select(m => m.Saidas),
+                }))</script>
+                <details class="grafico-tabela">
+                    <summary>Ver os números em tabela</summary>
+                    <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                            <thead><tr><th>Mês</th><th class="text-end">Entradas</th><th class="text-end">Saídas</th></tr></thead>
+                            <tbody>
+                            @foreach (var m in Model.Meses)
+                            {
+                                <tr><td>@m.Rotulo</td><td class="text-end">@Formatos.Moeda(m.Entradas)</td><td class="text-end">@Formatos.Moeda(m.Saidas)</td></tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+            }
+        </div>
+    </div>
+
+    <div class="col-lg-4 d-flex flex-column gap-3">
+        @* ---------- Situação do estoque (retrato de agora) ---------- *@
+        <div class="card grafico">
+            <div class="grafico-cabecalho">
+                <div>
+                    <h2>Situação do estoque</h2>
+                    <p>@totalSituacao @(totalSituacao == 1 ? "item acompanhado" : "itens acompanhados") nesta unidade</p>
+                </div>
+            </div>
+            @if (totalSituacao == 0)
+            {
+                <p class="vazio">Nenhum item com movimentação nesta unidade.</p>
+            }
+            else
+            {
+                <div class="segmentos" role="img" aria-label="@Model.ItensNormais normais, @Model.ItensEstoqueBaixo com estoque baixo, @Model.ItensSemEstoque sem estoque">
+                    @if (Model.ItensNormais > 0) { <span class="seg-normal" style="flex-grow: @Model.ItensNormais" title="Normal: @Model.ItensNormais">@Model.ItensNormais</span> }
+                    @if (Model.ItensEstoqueBaixo > 0) { <span class="seg-baixo" style="flex-grow: @Model.ItensEstoqueBaixo" title="Estoque baixo: @Model.ItensEstoqueBaixo">@Model.ItensEstoqueBaixo</span> }
+                    @if (Model.ItensSemEstoque > 0) { <span class="seg-zerado" style="flex-grow: @Model.ItensSemEstoque" title="Sem estoque: @Model.ItensSemEstoque">@Model.ItensSemEstoque</span> }
+                </div>
+                <ul class="legenda legenda-lista">
+                    <li><span class="amostra seg-normal"></span> <i class="bi bi-check-circle" aria-hidden="true"></i> Normal <strong>@Model.ItensNormais</strong></li>
+                    <li><span class="amostra seg-baixo"></span> <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> Estoque baixo <strong>@Model.ItensEstoqueBaixo</strong></li>
+                    <li><span class="amostra seg-zerado"></span> <i class="bi bi-x-circle" aria-hidden="true"></i> Sem estoque <strong>@Model.ItensSemEstoque</strong></li>
+                </ul>
+            }
+        </div>
+
+        @* ---------- Movimentações por tipo (período escolhido) ---------- *@
+        <div class="card grafico flex-grow-1">
+            <div class="grafico-cabecalho">
+                <div>
+                    <h2>Movimentações por tipo</h2>
+                    <p>Quantidade de registros · @nomePeriodo</p>
+                </div>
+            </div>
+            @if (maxTipo == 0)
+            {
+                <p class="vazio">Nenhuma movimentação neste período.</p>
+            }
+            else
+            {
+                <ul class="barras">
+                    @foreach (var t in Model.PorTipo)
+                    {
+                        <li title="@TiposMovimentacao.Rotulo(t.Tipo): @t.Movimentacoes @(t.Movimentacoes == 1 ? "movimentação" : "movimentações"), @Formatos.Moeda(t.Valor)">
+                            <span class="barras-nome">@TiposMovimentacao.Rotulo(t.Tipo)</span>
+                            <span class="barras-trilho"><span class="barras-barra @(t.Entrada ? "cor-entrada" : "cor-saida")" style="width: @Largura(t.Movimentacoes, maxTipo)%"></span></span>
+                            <span class="barras-valor">@t.Movimentacoes</span>
+                        </li>
+                    }
+                </ul>
+                <ul class="legenda mt-2" aria-hidden="true">
+                    <li><span class="amostra cor-entrada"></span> Entradas</li>
+                    <li><span class="amostra cor-saida"></span> Saídas</li>
+                </ul>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    @* ---------- Valor em estoque por categoria ---------- *@
+    <div class="col-lg-6">
+        <div class="card grafico h-100">
+            <div class="grafico-cabecalho">
+                <div>
+                    <h2>Valor em estoque por categoria</h2>
+                    <p>Estoque de hoje, do maior para o menor</p>
+                </div>
+            </div>
+            @if (Model.PorCategoria.Count == 0)
+            {
+                <p class="vazio">Nenhum item com saldo nesta unidade.</p>
+            }
+            else
+            {
+                <ul class="barras barras-largas">
+                    @foreach (var c in Model.PorCategoria)
+                    {
+                        <li title="@c.Categoria: @Formatos.Moeda(c.Valor) em @c.Itens @(c.Itens == 1 ? "produto" : "produtos")">
+                            <span class="barras-nome">@c.Categoria</span>
+                            <span class="barras-trilho"><span class="barras-barra cor-unica" style="width: @Largura(c.Valor, maxCategoria)%"></span></span>
+                            <span class="barras-valor">@Formatos.Moeda(c.Valor)</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+
+    @* ---------- Itens abaixo do mínimo ---------- *@
+    <div class="col-lg-6">
+        <div class="card grafico h-100">
+            <div class="grafico-cabecalho">
+                <div>
+                    <h2>Itens abaixo do mínimo @if (Model.TotalAlertas > 0) { <span class="badge text-bg-danger ms-1">@Model.TotalAlertas</span> }</h2>
+                    <p>@(Model.TotalAlertas > Model.Alertas.Count ? $"Os {Model.Alertas.Count} mais críticos" : "Repor primeiro o que está mais longe do mínimo")</p>
+                </div>
             </div>
             @if (Model.Alertas.Count == 0)
             {
@@ -37,20 +236,6 @@
                     </table>
                 </div>
             }
-        </div>
-    </div>
-    <div class="col-lg-5">
-        <div class="card h-100">
-            <div class="card-header">Resumo da unidade</div>
-            <dl class="resumo">
-                <div>
-                    <dt>Itens em estoque <small>@Model.ItensDistintos produtos diferentes</small></dt>
-                    <dd>@Model.ItensEmEstoque</dd>
-                </div>
-                <div><dt>Doações recebidas</dt><dd>@Model.DoacoesRecebidas</dd></div>
-                <div><dt>Doações realizadas</dt><dd>@Model.DoacoesRealizadas</dd></div>
-                <div><dt>Beneficiários</dt><dd>@Model.Beneficiarios</dd></div>
-            </dl>
         </div>
     </div>
 </div>
@@ -89,3 +274,8 @@
         </div>
     }
 </div>
+
+@section Scripts {
+    <script src="~/lib/chart.js/chart.umd.min.js"></script>
+    <script src="~/js/painel.js" asp-append-version="true"></script>
+}

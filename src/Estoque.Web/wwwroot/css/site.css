@@ -203,16 +203,73 @@ a { text-underline-offset: .18em; }
 .card-header.bg-white { background: var(--superficie) !important; }
 .card-footer { border-top-color: var(--borda); }
 
-/* Resumo do painel: rótulo à esquerda, número à direita, uma linha por indicador */
-.resumo { margin: 0; }
-.resumo > div {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
-    padding: .8rem 1.1rem; border-bottom: 1px solid var(--borda);
+/* ---------- Painel: indicadores e gráficos ----------
+   Cores dos gráficos validadas para daltonismo (par entrada/saída: ΔE 12,7 em protanopia).
+   Texto sempre em tinta neutra; a cor fica só na marca ao lado. */
+:root {
+    --grafico-entrada: #0e8f7e;
+    --grafico-saida: #cc5a1e;
+    --grafico-unica: #135f5d;
+    --estado-normal: #17693f;
+    --estado-baixo: #c48a0a;
+    --estado-zerado: #a3391f;
 }
-.resumo > div:last-child { border-bottom: 0; }
-.resumo dt { font-weight: 400; color: var(--tinta-2); }
-.resumo dt small { display: block; color: var(--apagado); }
-.resumo dd { margin: 0; font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.periodo .btn { min-height: 40px; }
+.periodo .btn.active { background: var(--marca-700); border-color: var(--marca-700); color: #fff; }
+
+.indicador { padding: 1rem 1.1rem; }
+.indicador-rotulo { color: var(--tinta-2); font-size: .95rem; }
+.indicador-valor {
+    font-size: clamp(1.25rem, .95rem + .75vw, 1.75rem); font-weight: 700; line-height: 1.2;
+    font-variant-numeric: tabular-nums; margin: .15rem 0 .25rem; white-space: nowrap;
+}
+.indicador-nota { color: var(--apagado); font-size: .875rem; }
+
+.grafico { padding: 1rem 1.1rem 1.1rem; }
+.grafico-cabecalho { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: .5rem 1rem; margin-bottom: .9rem; }
+.grafico-cabecalho h2 { font-size: 1.05rem; margin: 0; }
+.grafico-cabecalho p { margin: .1rem 0 0; color: var(--apagado); font-size: .875rem; }
+.grafico .vazio { padding: 1.5rem 0; }
+.grafico > .table-responsive { margin: 0 -1.1rem -1.1rem; }
+.grafico-area { position: relative; height: 290px; }
+.grafico-tabela { margin-top: .75rem; }
+.grafico-tabela summary { color: var(--marca-700); font-size: .9rem; cursor: pointer; width: fit-content; padding: .3rem 0; }
+.grafico-tabela[open] summary { margin-bottom: .5rem; }
+
+.legenda { list-style: none; display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin: 0; padding: 0; font-size: .875rem; color: var(--tinta-2); }
+.legenda li { display: flex; align-items: center; gap: .4rem; }
+.legenda-lista { flex-direction: column; gap: .4rem; margin-top: .9rem; font-size: .95rem; }
+.legenda-lista strong { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--tinta); }
+.amostra { width: .8rem; height: .8rem; border-radius: 2px; flex-shrink: 0; }
+.cor-entrada { background: var(--grafico-entrada); }
+.cor-saida { background: var(--grafico-saida); }
+.cor-unica { background: var(--grafico-unica); }
+.seg-normal { background: var(--estado-normal); }
+.seg-baixo { background: var(--estado-baixo); }
+.seg-zerado { background: var(--estado-zerado); }
+
+/* Barra segmentada: um todo dividido em até três partes, com 2 px de respiro entre elas */
+.segmentos { display: flex; gap: 2px; height: 44px; border-radius: 4px; overflow: hidden; }
+.segmentos span {
+    flex-basis: 0; min-width: 1.6rem;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.segmentos .seg-baixo { color: #2b1d00; }
+
+/* Barras horizontais: nome, barra e número na mesma linha; todas partem da mesma base */
+.barras { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+.barras li { display: grid; grid-template-columns: max-content 1fr auto; align-items: center; gap: .6rem; }
+.barras:not(.barras-largas) .barras-nome { min-width: 8.5rem; }
+.barras-largas li { grid-template-columns: minmax(6.5rem, 28%) 1fr minmax(5.5rem, auto); }
+.barras-nome { color: var(--tinta-2); font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.barras-trilho { display: block; height: 14px; }
+.barras-barra { display: block; height: 100%; min-width: 2px; border-radius: 0 4px 4px 0; }
+.barras-valor { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 575.98px) {
+    .barras li, .barras-largas li { grid-template-columns: 1fr auto; row-gap: .15rem; }
+    .barras-trilho { grid-column: 1 / -1; grid-row: 2; }
+}
 
 .vazio { padding: 1.5rem 1.1rem; color: var(--apagado); margin: 0; }
 

@@ -194,21 +194,74 @@ public sealed class MovimentacaoService(EstoqueDbContext db)
 
 public sealed class DashboardService(EstoqueDbContext db)
 {
-    public async Task<DashboardViewModel> MontarAsync()
+    /// <summary>
+    /// Painel da unidade atual. Indicadores e "por tipo" cobrem os últimos <paramref name="dias"/> dias
+    /// (30, 90 ou 365; outro valor vira 30); o gráfico mensal cobre sempre os últimos 12 meses; o retrato
+    /// do estoque é o de agora. Só movimentações processadas entram nas somas. Valores são os estimados
+    /// informados nas movimentações: quantidades não são somadas porque as unidades de medida diferem.
+    /// </summary>
+    public async Task<DashboardViewModel> MontarAsync(int dias = 30, DateOnly? hoje = null)
     {
+        if (!DashboardViewModel.Periodos.Contains(dias)) dias = 30;
+        var fim = hoje ?? Tempo.Hoje;
+        var inicio = fim.AddDays(-(dias - 1));
+        var inicioAnterior = inicio.AddDays(-dias);
+        var primeiroMes = new DateOnly(fim.Year, fim.Month, 1).AddMonths(-11);
+
         var processadas = db.Movimentacoes.Where(m => m.Status == StatusMovimentacao.Processada);
         var estoqueAtivo = db.Estoques.Where(e => e.Item!.Ativo && e.Ativo);
 
+        // Período atual e o anterior numa consulta só
+        var porTipoBruto = await processadas
+            .Where(m => m.DataMovimentacao >= inicioAnterior && m.DataMovimentacao <= fim)
+            .GroupBy(m => new { m.TipoMovimentacao, Atual = m.DataMovimentacao >= inicio })
+            .Select(g => new { g.Key.TipoMovimentacao, g.Key.Atual, Qtd = g.Count(), Valor = g.Sum(m => m.ValorTotal) })
+            .ToListAsync();
+        var atual = porTipoBruto.Where(x => x.Atual).ToList();
+        var anterior = porTipoBruto.Where(x => !x.Atual).ToList();
+
+        var mesesBruto = await processadas
+            .Where(m => m.DataMovimentacao >= primeiroMes && m.DataMovimentacao <= fim)
+            .GroupBy(m => new { m.DataMovimentacao.Year, m.DataMovimentacao.Month, m.TipoMovimentacao })
+            .Select(g => new { g.Key.Year, g.Key.Month, g.Key.TipoMovimentacao, Valor = g.Sum(m => m.ValorTotal) })
+            .ToListAsync();
+        var meses = Enumerable.Range(0, 12).Select(n => primeiroMes.AddMonths(n)).Select(d => new PainelMes(d.Year, d.Month,
+            mesesBruto.Where(x => x.Year == d.Year && x.Month == d.Month && TiposMovimentacao.EhEntrada(x.TipoMovimentacao)).Sum(x => x.Valor),
+            mesesBruto.Where(x => x.Year == d.Year && x.Month == d.Month && !TiposMovimentacao.EhEntrada(x.TipoMovimentacao)).Sum(x => x.Valor))).ToList();
+
+        var porCategoria = await estoqueAtivo
+            .Where(e => e.QuantidadeAtual > 0)
+            .GroupBy(e => e.Item!.Categoria!.Nome)
+            .Select(g => new PainelCategoria(g.Key, g.Sum(e => e.ValorTotalEstoque), g.Count()))
+            .ToListAsync();
+
+        var semEstoque = await estoqueAtivo.CountAsync(e => e.QuantidadeAtual == 0);
+        var baixo = await estoqueAtivo.CountAsync(e => e.QuantidadeAtual > 0 && e.AbaixoDoMinimo);
+        var totalEstoque = await estoqueAtivo.CountAsync();
+
         return new DashboardViewModel
         {
-            DoacoesRecebidas = await processadas.CountAsync(m => m.TipoMovimentacao == TiposMovimentacao.DoacaoRecebida),
-            ItensEmEstoque = await estoqueAtivo.SumAsync(e => (int?)e.QuantidadeAtual) ?? 0,
-            ItensDistintos = await estoqueAtivo.CountAsync(e => e.QuantidadeAtual > 0),
-            Beneficiarios = await processadas
-                .Where(m => m.TipoMovimentacao == TiposMovimentacao.DoacaoRealizada && m.Beneficiario != null)
-                .Select(m => m.Beneficiario).Distinct().CountAsync(),
-            DoacoesRealizadas = await processadas.CountAsync(m => m.TipoMovimentacao == TiposMovimentacao.DoacaoRealizada),
-            Alertas = await ConsultarAlertas().Take(10).ToListAsync(),
+            PeriodoDias = dias,
+            Inicio = inicio,
+            Fim = fim,
+            DoacoesRecebidas = atual.Where(x => x.TipoMovimentacao == TiposMovimentacao.DoacaoRecebida).Sum(x => x.Qtd),
+            DoacoesRecebidasAnterior = anterior.Where(x => x.TipoMovimentacao == TiposMovimentacao.DoacaoRecebida).Sum(x => x.Qtd),
+            ValorEntradas = atual.Where(x => TiposMovimentacao.EhEntrada(x.TipoMovimentacao)).Sum(x => x.Valor),
+            ValorEntradasAnterior = anterior.Where(x => TiposMovimentacao.EhEntrada(x.TipoMovimentacao)).Sum(x => x.Valor),
+            ValorSaidas = atual.Where(x => !TiposMovimentacao.EhEntrada(x.TipoMovimentacao)).Sum(x => x.Valor),
+            ValorSaidasAnterior = anterior.Where(x => !TiposMovimentacao.EhEntrada(x.TipoMovimentacao)).Sum(x => x.Valor),
+            ValorEstoque = porCategoria.Sum(c => c.Valor),
+            ItensDistintos = porCategoria.Sum(c => c.Itens),
+            ItensSemEstoque = semEstoque,
+            ItensEstoqueBaixo = baixo,
+            ItensNormais = totalEstoque - semEstoque - baixo,
+            Meses = meses,
+            // Sempre os cinco tipos, na ordem fixa (entradas, depois saídas), mesmo zerados
+            PorTipo = [.. TiposMovimentacao.Entradas.Concat(TiposMovimentacao.Saidas).Select(t => new PainelTipo(t, TiposMovimentacao.EhEntrada(t),
+                atual.Where(x => x.TipoMovimentacao == t).Sum(x => x.Qtd), atual.Where(x => x.TipoMovimentacao == t).Sum(x => x.Valor)))],
+            PorCategoria = [.. porCategoria.OrderByDescending(c => c.Valor).ThenBy(c => c.Categoria)],
+            TotalAlertas = await ContarAlertasAsync(),
+            Alertas = await ConsultarAlertas().Take(6).ToListAsync(),
             UltimasMovimentacoes = await db.Movimentacoes
                 .Include(m => m.Item).Include(m => m.Responsavel)
                 .OrderByDescending(m => m.CriadoEm).ThenByDescending(m => m.Id)

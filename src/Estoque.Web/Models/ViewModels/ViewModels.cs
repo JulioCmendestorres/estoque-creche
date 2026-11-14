@@ -33,13 +33,46 @@ public class AlterarSenhaInput
     public string Confirmacao { get; set; } = "";
 }
 
+/// <summary>Um mês do gráfico "Entradas e saídas por mês" (valores estimados, só movimentações processadas).</summary>
+public sealed record PainelMes(int Ano, int Mes, decimal Entradas, decimal Saidas)
+{
+    private static readonly System.Globalization.CultureInfo PtBr = System.Globalization.CultureInfo.GetCultureInfo("pt-BR");
+    /// <summary>"nov/26"</summary>
+    public string Rotulo => new DateOnly(Ano, Mes, 1).ToString("MMM/yy", PtBr).Replace(".", "");
+}
+
+public sealed record PainelTipo(string Tipo, bool Entrada, int Movimentacoes, decimal Valor);
+
+public sealed record PainelCategoria(string Categoria, decimal Valor, int Itens);
+
 public class DashboardViewModel
 {
+    public static readonly int[] Periodos = [30, 90, 365];
+
+    /// <summary>Período dos indicadores e do gráfico por tipo, em dias (30, 90 ou 365), terminando hoje.</summary>
+    public int PeriodoDias { get; init; } = 30;
+    public DateOnly Inicio { get; init; }
+    public DateOnly Fim { get; init; }
+
+    // Indicadores do período; "Anterior" = mesmo número de dias imediatamente antes
     public int DoacoesRecebidas { get; init; }
-    public int ItensEmEstoque { get; init; }
+    public int DoacoesRecebidasAnterior { get; init; }
+    public decimal ValorEntradas { get; init; }
+    public decimal ValorEntradasAnterior { get; init; }
+    public decimal ValorSaidas { get; init; }
+    public decimal ValorSaidasAnterior { get; init; }
+
+    // Retrato do estoque agora (não depende do período)
+    public decimal ValorEstoque { get; init; }
     public int ItensDistintos { get; init; }
-    public int Beneficiarios { get; init; }
-    public int DoacoesRealizadas { get; init; }
+    public int ItensSemEstoque { get; init; }
+    public int ItensEstoqueBaixo { get; init; }
+    public int ItensNormais { get; init; }
+
+    public IReadOnlyList<PainelMes> Meses { get; init; } = [];
+    public IReadOnlyList<PainelTipo> PorTipo { get; init; } = [];
+    public IReadOnlyList<PainelCategoria> PorCategoria { get; init; } = [];
+    public int TotalAlertas { get; init; }
     public IReadOnlyList<EstoqueUnidade> Alertas { get; init; } = [];
     public IReadOnlyList<Movimentacao> UltimasMovimentacoes { get; init; } = [];
 }

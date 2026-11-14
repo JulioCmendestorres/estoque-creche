@@ -13,7 +13,7 @@ namespace Estoque.Web.Controllers;
 
 public class HomeController(DashboardService dashboard) : Controller
 {
-    public async Task<IActionResult> Index() => View(await dashboard.MontarAsync());
+    public async Task<IActionResult> Index(int periodo = 30) => View(await dashboard.MontarAsync(periodo));
 
     [AllowAnonymous]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
